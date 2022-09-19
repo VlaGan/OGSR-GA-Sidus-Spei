@@ -1,0 +1,34 @@
+﻿# Папки
+/.vs
+/3rd_party/_LIB
+/3rd_party/_TEMP
+/ogsr_engine/_LIB
+/ogsr_engine/_TEMP
+/bin*
+
+# Precompiled Headers
+*.ipch
+
+# Всякий ненужный мусор:
+*.VC.*
+*.suo
+*.user
+*.exp
+*.aps
+*.TMP
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+/gamedata
+/gamedata*
+/_appdata_
+/fsgame*
+/mods

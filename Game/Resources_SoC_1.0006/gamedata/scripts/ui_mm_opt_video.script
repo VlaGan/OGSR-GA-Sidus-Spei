@@ -1,0 +1,58 @@
+--Меню базовых настроек графики. Используется скриптом ui_mm_opt_main.script
+
+class "opt_video" (CUIWindow)
+function opt_video:__init() super()
+end
+
+function opt_video:__finalize()
+	--log1("--opt_video:__finalize() called!")
+end
+
+function opt_video:InitControls(x, y, xml, handler)
+	self:Init(x, y, 738, 416)
+	self:SetAutoDelete(true)
+
+	xml:InitFrame("frame", self)
+
+	local cap_brightness = xml:InitStatic("tab_video:cap_brightness", self)
+	local track_brightness = xml:InitTrackBar("tab_video:track_brightness", self)
+
+	local cap_contrast = xml:InitStatic("tab_video:cap_contrast", self)
+	local track_contrast = xml:InitTrackBar("tab_video:track_contrast", self)
+
+	local cap_gamma = xml:InitStatic("tab_video:cap_gamma", self)
+	local track_gamma = xml:InitTrackBar("tab_video:track_gamma", self)
+
+	local function enable_fullscreen_trackbars(...)
+		for _, static in ipairs({cap_brightness, track_brightness, cap_contrast, track_contrast, cap_gamma, track_gamma}) do
+			static:Enable(...)
+		end
+	end
+
+	xml:InitStatic("tab_video:cap_fullscreen", self)
+	local btn = xml:InitCheck("tab_video:check_fullscreen", self)
+	handler:Register(btn, "check_fullscreen")
+	handler:AddCallback("check_fullscreen", ui_events.CHECK_BUTTON_SET, enable_fullscreen_trackbars, true)
+	handler:AddCallback("check_fullscreen", ui_events.CHECK_BUTTON_RESET, enable_fullscreen_trackbars, false)
+
+	xml:InitStatic("tab_video:cap_always_active", self) --Вот это надо инитить раньше list_fps_lock, чтобы этот статик не перекрывал выпадающий список.
+	xml:InitCheck("tab_video:check_always_active", self)
+
+	xml:InitStatic("tab_video:cap_fps_lock", self)
+	xml:InitComboBox("tab_video:list_fps_lock", self)
+
+	xml:InitStatic("tab_video:cap_resolution", self)
+	xml:InitComboBox("tab_video:list_resolution", self)
+
+	xml:InitStatic("tab_video:cap_preset", self)
+	local btn = xml:InitComboBox("tab_video:list_presets", self)
+	handler:Register(btn, "combo_preset")
+
+	xml:InitStatic("tab_video:cap_renderer", self)
+	local btn = xml:InitComboBox("tab_video:list_renderer", self)
+	handler:Register(btn, "tab_video:list_renderer")
+	handler:AddCallback( "tab_video:list_renderer", ui_events.LIST_ITEM_SELECT, handler.show_need_restart_wnd, handler )
+
+	local btn = xml:Init3tButton("tab_video:btn_advanced", self)	
+	handler:Register(btn, "btn_advanced_graphic")	
+end

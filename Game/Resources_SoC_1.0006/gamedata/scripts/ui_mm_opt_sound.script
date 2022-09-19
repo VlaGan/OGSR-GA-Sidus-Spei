@@ -1,0 +1,29 @@
+--Меню настроек звука. Используется скриптом ui_mm_opt_main.script
+
+class "opt_sound" (CUIWindow)
+function opt_sound:__init() super()
+end
+
+function opt_sound:__finalize()
+end
+
+function opt_sound:InitControls(x, y, xml, handler)
+	self:Init(x, y, 738, 416)
+	self:SetAutoDelete(true)
+
+	xml:InitFrame("frame", self)
+
+	xml:InitStatic("tab_sound:cap_mastervolume", self)
+	xml:InitStatic("tab_sound:cap_musicvolume", self)
+
+	xml:InitTrackBar("tab_sound:track_musicvolume", self)
+	xml:InitTrackBar("tab_sound:track_mastervolume", self)
+
+	xml:InitStatic("tab_sound:cap_snd_device", self)
+	local ctl = xml:InitComboBox("tab_sound:list_snd_device", self)
+	handler:Register(ctl, "tab_sound:list_snd_device")
+	handler:AddCallback( "tab_sound:list_snd_device", ui_events.LIST_ITEM_SELECT, handler.show_need_restart_wnd, handler )
+
+	local ctl = xml:InitCheck("tab_sound:check_eax", self)
+	handler:Register(ctl, "tab_sound:check_eax")
+end
