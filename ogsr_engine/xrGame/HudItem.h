@@ -314,10 +314,13 @@ private:
     Fvector m_nearwall_last_pos{}, m_nearwall_last_rot{};
     u32 m_nearwall_last_call{};
 
-    float m_fLR_MovingFactor{}, m_fLookout_MovingFactor{}, m_fJump_MovingFactor{}, mfSafeMode_SetFactor{}, mfSscope_Factor{};
+    float m_fLR_MovingFactor{}, m_fLookout_MovingFactor{}, m_fJump_MovingFactor{}, mfSafeMode_SetFactor{}, mfSscope_Factor{}, mfWalkEffectSetFactor{};
     Fvector m_strafe_offset[3][2]{}, m_lookout_offset[3][2]{}, m_jump_offset[3][2]{}, m_safe_mode_offset[1][2], m_second_scope_offset[2];
 
+    Fvector m_walk_effect[2][2]{};
 
+    float fWalkMaxTime{}, fWalkEffectSideTimer{};
+    int fWalkEffectSide{};
     float m_base_fov{};
 
     bool allow_bobbing{true};

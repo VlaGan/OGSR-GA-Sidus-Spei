@@ -152,6 +152,12 @@ void CHudItem::Load(LPCSTR section)
     m_second_scope_offset[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_orientation", (Fvector{0.f, 0.f, 0.f})));
     m_second_scope_enable = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
 
+    m_walk_effect[0][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_right_position", (Fvector{0.f, 0.f, 0.f})));
+    m_walk_effect[0][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_right_orientation", (Fvector{0.f, 0.f, 0.f})));
+    m_walk_effect[1][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_left_position", (Fvector{0.f, 0.f, 0.f})));
+    m_walk_effect[1][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_left_orientation", (Fvector{0.f, 0.f, 0.f})));
+    fWalkMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_maxtime", 0.2f);
+
     is_second_scope = false;
 
     //Загрузка параметров инерции --#SM+# Begin--
@@ -1093,9 +1099,71 @@ SAFEMODE : {
         summary_offset.add(safemode_offs);
         summary_rotate.add(safemode_rot);
 
-        goto LOOKOUT_EFFECT;
+        goto WALK_EFFECTS;
 
-    
+}
+
+
+WALK_EFFECTS:{
+        const float fWalkUpdtime = Device.fTimeDelta / fWalkMaxTime;
+        fWalkEffectSideTimer += fWalkUpdtime;
+
+        Fvector walk_effect_pos, walk_effect_rot;
+        if (fWalkEffectSide){
+            walk_effect_pos = m_walk_effect[1][0];
+            walk_effect_rot = m_walk_effect[1][1];
+        }
+        else{
+            walk_effect_pos = m_walk_effect[0][0];
+            walk_effect_pos = m_walk_effect[0][1];
+        }
+
+        auto pAct = smart_cast<CActor*>(object().H_Parent());
+        if (pAct->is_actor_running())
+        {
+            if (fWalkEffectSideTimer <= fWalkMaxTime){
+                mfWalkEffectSetFactor += fWalkUpdtime;
+                clamp(mfWalkEffectSetFactor, 0.0f, 1.0f);
+            }
+            else
+            {
+                if (mfWalkEffectSetFactor < 0.0f)
+                {
+                    mfWalkEffectSetFactor += fWalkUpdtime;
+                    clamp(mfWalkEffectSetFactor, -1.0f, 0.0f);
+                }
+                else
+                {
+                    mfWalkEffectSetFactor -= fWalkUpdtime;
+                    clamp(mfWalkEffectSetFactor, 0.0f, 1.0f);
+                }
+            }
+        }
+        else{
+            if (mfWalkEffectSetFactor < 0.0f)
+            {
+                mfWalkEffectSetFactor += fWalkUpdtime;
+                clamp(mfWalkEffectSetFactor, -1.0f, 0.0f);
+            }
+            else{
+                mfWalkEffectSetFactor -= fWalkUpdtime;
+                clamp(mfWalkEffectSetFactor, 0.0f, 1.0f);
+            }
+        }
+
+        if (fWalkEffectSideTimer >= 2*fWalkMaxTime){
+            fWalkEffectSideTimer = 0;
+            fWalkEffectSide = true ? !fWalkEffectSide : false;
+        }
+
+        walk_effect_pos.mul(mfWalkEffectSetFactor);
+        walk_effect_rot.mul(-PI / 180.f);
+        walk_effect_rot.mul(mfWalkEffectSetFactor);
+
+        summary_offset.add(walk_effect_pos);
+        summary_rotate.add(walk_effect_rot);
+
+        goto LOOKOUT_EFFECT;
 }
 
 
