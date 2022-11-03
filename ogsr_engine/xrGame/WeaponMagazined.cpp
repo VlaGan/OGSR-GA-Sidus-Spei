@@ -1072,14 +1072,27 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
         if ((flags & CMD_START) && IsBayonetAttached() && (GetState() == eIdle) && !IsBayonetKick)
         {
             CActor* pAct = smart_cast<CActor*>(H_Parent());
-            if (pAct->GetSafemode())
+            if (pAct->GetSafemode()){
                 pAct->SetSafemode(false);
-
+                return false;
+            }
             BayonetKick();
             return true;
         }
     }
     break;
+    case kSECONDSCOPE: {
+        if (flags & CMD_START)
+        {
+            if (IsZoomed())
+                ChangeScopeVision();
+
+            return true;
+        }
+    }
+    break;
+
+
     }
 
     return false;

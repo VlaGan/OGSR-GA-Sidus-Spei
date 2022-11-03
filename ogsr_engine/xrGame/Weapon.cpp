@@ -1233,9 +1233,9 @@ bool CWeapon::Action(s32 cmd, u32 flags)
     case kWPN_FIRE: {
         //если оружие чем-то занято, то ничего не делать
         {
-            /* auto* pAct = smart_cast<CActor*>(H_Parent());
+            /*auto* pAct = smart_cast<CActor*>(H_Parent());
             bool issafemode = pAct->GetSafemode();
-            if (issafemode)
+            if (issafemode && ParentIsActor())
             {
                 pAct->SetSafemode(false);
                 return false;
@@ -1284,7 +1284,7 @@ bool CWeapon::Action(s32 cmd, u32 flags)
     case kWPN_ZOOM: {
         if (IsZoomEnabled() && !is_second_scope)
         {
-            if (flags & CMD_START && !IsPending())
+            if (flags& CMD_START && !IsPending())
             {
                 if (psActorFlags.is(AF_WPN_AIM_TOGGLE) && IsZoomed())
                 {
@@ -1303,24 +1303,6 @@ bool CWeapon::Action(s32 cmd, u32 flags)
             return false;
     }
 
-    case kSECONDSCOPE: {
-        if (m_second_scope_enable)
-        {
-            if (is_second_scope)
-            {
-                OnZoomOut();
-                is_second_scope = false;
-            }
-            else
-            {
-                OnZoomIn();
-                is_second_scope = true;
-            }
-        }
-
-        return true;
-    }
-
     case kWPN_ZOOM_INC:
     case kWPN_ZOOM_DEC: {
         if (IsZoomEnabled() && IsZoomed() && m_bScopeDynamicZoom && IsScopeAttached() && (flags & CMD_START))
@@ -1336,6 +1318,15 @@ bool CWeapon::Action(s32 cmd, u32 flags)
         else
             return false;
     }
+    /* case kSECONDSCOPE : {
+        if (IsZoomed())
+            ChangeScopeVision();
+        else
+            return false;
+
+       break;
+    }*/
+
     }
     return false;
 }
@@ -2167,10 +2158,9 @@ bool CWeapon::ready_to_kill() const { return (!IsMisfire() && ((GetState() == eI
 u8 CWeapon::GetCurrentHudOffsetIdx() const
 {
     const bool b_aiming = ((IsZoomed() && m_fZoomRotationFactor <= 1.f) || (!IsZoomed() && m_fZoomRotationFactor > 0.f));
-    if (is_second_scope)
-    {
-        return hud_item_measures::m_hands_offset_type_aim2;
-    }
+    //if (is_second_scope)
+        //return hud_item_measures::m_hands_offset_type_aim2;
+
     if (b_aiming)
     {
         const bool has_gl = GrenadeLauncherAttachable() && IsGrenadeLauncherAttached();
@@ -2514,3 +2504,12 @@ void CWeapon::SaveAttachableParams()
 }
 
 void CWeapon::ParseCurrentItem(CGameFont* F) { F->OutNext("WEAPON IN STRAPPED MODE: [%d]", m_strapped_mode); }
+
+
+void CWeapon::ChangeScopeVision() { 
+    if (!m_second_scope_enable)
+        return;
+
+    is_second_scope = true ? !is_second_scope : false;
+    standart_scope = !is_second_scope;
+}

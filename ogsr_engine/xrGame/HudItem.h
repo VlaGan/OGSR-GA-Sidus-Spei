@@ -185,8 +185,8 @@ public:
     virtual bool render_item_3d_ui_query() { return false; }
     virtual bool CheckCompatibility(CHudItem*) { return true; }
 
-    bool is_second_scope;
-    bool m_second_scope_enable;
+    bool is_second_scope{}, m_second_scope_enable;
+    float fSscopeMaxTime{};
 
 protected:
     BOOL hud_mode;
@@ -292,6 +292,7 @@ protected:
     virtual Fvector GetPositionForCollision() { return Device.vCameraPosition; }
     virtual Fvector GetDirectionForCollision() { return Device.vCameraDirection; }
     float m_fZoomRotationFactor{}; //от 0 до 1, показывает насколько процентов мы перемещаем HUD
+    float m_fSecondScopeFactor{};
     float m_fZoomRotateTime{}; //время приближения
     u32 skip_updated_frame{};
     bool HudInertionAllowed() const { return m_huditem_flags.test(fl_inertion_allow); }
@@ -317,10 +318,9 @@ private:
     float m_fLR_MovingFactor{}, m_fLookout_MovingFactor{}, m_fJump_MovingFactor{}, mfSafeMode_SetFactor{}, mfSscope_Factor{}, mfWalkEffectSetFactor{};
     Fvector m_strafe_offset[3][2]{}, m_lookout_offset[3][2]{}, m_jump_offset[3][2]{}, m_safe_mode_offset[1][2], m_second_scope_offset[2];
 
-    Fvector m_walk_effect[2][2]{};
+    Fvector m_walk_effect[2]{};
 
-    float fWalkMaxTime{}, fWalkEffectSideTimer{};
-    int fWalkEffectSide{};
+    float fWalkMaxTime{}, fWalkEffectSideTimer{}, fWalkEffectRestoreFactor{};
     float m_base_fov{};
 
     bool allow_bobbing{true};

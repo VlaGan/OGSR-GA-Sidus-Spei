@@ -151,14 +151,12 @@ void CHudItem::Load(LPCSTR section)
     m_second_scope_offset[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_position", (Fvector{0.f, 0.f, 0.f})));
     m_second_scope_offset[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_orientation", (Fvector{0.f, 0.f, 0.f})));
     m_second_scope_enable = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
+    fSscopeMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "second_scope_time", 0.3f);
 
-    m_walk_effect[0][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_right_position", (Fvector{0.f, 0.f, 0.f})));
-    m_walk_effect[0][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_right_orientation", (Fvector{0.f, 0.f, 0.f})));
-    m_walk_effect[1][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_left_position", (Fvector{0.f, 0.f, 0.f})));
-    m_walk_effect[1][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_left_orientation", (Fvector{0.f, 0.f, 0.f})));
-    fWalkMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_maxtime", 0.2f);
-
-    is_second_scope = false;
+    m_walk_effect[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_position", (Fvector{0.f, 0.f, 0.f})));
+    m_walk_effect[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_orientation", (Fvector{0.f, 0.f, 0.f})));
+    fWalkMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_time", 0.7f);
+    fWalkEffectRestoreFactor = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_restore_factor", 1.8f);
 
     //Загрузка параметров инерции --#SM+# Begin--
     constexpr float PITCH_OFFSET_R = 0.0f; // Насколько сильно ствол смещается вбок (влево) при вертикальных поворотах камеры
@@ -1026,14 +1024,14 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
         summary_rotate.add(moving_rot);
     }
     //====================================================//
+   
 
 AIM2 :{
-        //if (!m_second_scope_enable)
-        goto SAFEMODE;
+        //if (!m_second_scope_enable && !is_second_scope && !IsZoomed())
+           // goto SAFEMODE;
 
         Fvector sscope_offs = m_second_scope_offset[0];
         Fvector sscope_rot = m_second_scope_offset[1];
-        float fSscopeMaxTime = 0.25f;
 
         const float fSsopeModePerUpd = Device.fTimeDelta / fSscopeMaxTime;
         if (is_second_scope)
@@ -1056,11 +1054,13 @@ AIM2 :{
             }
         }
         sscope_offs.mul(mfSscope_Factor);
-        sscope_rot.mul(-PI / 180.f); // Преобразуем углы в радианы
+        sscope_rot.mul(-PI / 180.f);
         sscope_rot.mul(mfSscope_Factor);
 
         summary_offset.add(sscope_offs);
         summary_rotate.add(sscope_rot);
+
+        goto SAFEMODE;
     }
 
 SAFEMODE : {
@@ -1100,33 +1100,23 @@ SAFEMODE : {
         summary_rotate.add(safemode_rot);
 
         goto WALK_EFFECTS;
-
 }
 
 
 WALK_EFFECTS:{
         const float fWalkUpdtime = Device.fTimeDelta / fWalkMaxTime;
         fWalkEffectSideTimer += fWalkUpdtime;
-
-        Fvector walk_effect_pos, walk_effect_rot;
-        if (fWalkEffectSide){
-            walk_effect_pos = m_walk_effect[1][0];
-            walk_effect_rot = m_walk_effect[1][1];
-        }
-        else{
-            walk_effect_pos = m_walk_effect[0][0];
-            walk_effect_pos = m_walk_effect[0][1];
-        }
-
+        Fvector walk_effect_pos = m_walk_effect[0], walk_effect_rot = m_walk_effect[1];
         auto pAct = smart_cast<CActor*>(object().H_Parent());
-        if (pAct->is_actor_running())
+
+        if (pAct->is_actor_running() && !b_aiming)
         {
-            if (fWalkEffectSideTimer <= fWalkMaxTime){
+            if (fWalkEffectSideTimer <= fWalkMaxTime)
+            {
                 mfWalkEffectSetFactor += fWalkUpdtime;
                 clamp(mfWalkEffectSetFactor, 0.0f, 1.0f);
             }
-            else
-            {
+            else{
                 if (mfWalkEffectSetFactor < 0.0f)
                 {
                     mfWalkEffectSetFactor += fWalkUpdtime;
@@ -1151,10 +1141,8 @@ WALK_EFFECTS:{
             }
         }
 
-        if (fWalkEffectSideTimer >= 2*fWalkMaxTime){
+        if (fWalkEffectSideTimer >= fWalkEffectRestoreFactor*fWalkMaxTime)
             fWalkEffectSideTimer = 0;
-            fWalkEffectSide = true ? !fWalkEffectSide : false;
-        }
 
         walk_effect_pos.mul(mfWalkEffectSetFactor);
         walk_effect_rot.mul(-PI / 180.f);
@@ -1171,7 +1159,7 @@ LOOKOUT_EFFECT:
     //=============== Эффекты выглядываний ===============//
     {
         const bool bEnabled = m_lookout_offset[2][idx].x;
-        if (!bEnabled || is_second_scope)
+        if (!bEnabled && !is_second_scope)
             goto JUMP_EFFECT;
 
         float fLookoutMaxTime = m_lookout_offset[2][idx].y; // Макс. время в секундах, за которое мы наклонимся из центрального положения
