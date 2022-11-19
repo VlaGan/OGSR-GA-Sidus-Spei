@@ -726,8 +726,8 @@ public:
     void SaveAttachableParams() override;
     void ParseCurrentItem(CGameFont* F) override;
 
-public:
+/* public:
     bool standart_scope{true};
-    void ChangeScopeVision();
+    void ChangeScopeVision();*/
 
 };

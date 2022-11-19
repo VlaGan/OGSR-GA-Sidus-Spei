@@ -240,4 +240,7 @@ protected:
     virtual void net_Relcase(CObject* object);
 
     bool ScopeRespawn(PIItem);
+
+ public:
+    void ChangeScopeVision();
 };

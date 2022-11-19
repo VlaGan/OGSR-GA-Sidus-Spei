@@ -1031,7 +1031,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
     }
     break;
     case kLASER_ON: {
-        if ((flags & CMD_START) && has_laser && (GetState() == eIdle) && IsLaserAttached())
+        if ((flags & CMD_START) && has_laser && (GetState() == eIdle) )//&& IsLaserAttached())
         {
             LaserSwitch = true;
             DeviceSwitch();
@@ -1961,4 +1961,11 @@ bool CWeaponMagazined::ScopeRespawn(PIItem pIItem)
         }
     }
     return false;
+}
+
+void CWeaponMagazined::ChangeScopeVision(){
+    if (!m_second_scope_enable)
+        return;
+
+    is_second_scope = true ? !is_second_scope : false;
 }

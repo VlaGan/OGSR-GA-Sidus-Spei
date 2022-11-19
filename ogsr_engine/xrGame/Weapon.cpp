@@ -2505,7 +2505,7 @@ void CWeapon::SaveAttachableParams()
 
 void CWeapon::ParseCurrentItem(CGameFont* F) { F->OutNext("WEAPON IN STRAPPED MODE: [%d]", m_strapped_mode); }
 
-
+/*
 void CWeapon::ChangeScopeVision() { 
     if (!m_second_scope_enable)
         return;
@@ -2513,3 +2513,4 @@ void CWeapon::ChangeScopeVision() {
     is_second_scope = true ? !is_second_scope : false;
     standart_scope = !is_second_scope;
 }
+*/
