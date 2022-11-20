@@ -11,7 +11,9 @@
 
 #include "fbasicvisual.h"
 #include "../../xr_3da/fmesh.h"
+
 #include <filesystem>
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -33,7 +35,7 @@ dxRender_Visual::~dxRender_Visual() {}
 
 void dxRender_Visual::Release() {}
 
-// CStatTimer						tscreate;
+
 static bool replaceShadersLine(const char* N, char* fnS, u32 fnS_size, LPCSTR item)
 {
     if (!pSettings->line_exist("vis_shaders_replace", item))
@@ -86,7 +88,6 @@ static bool replaceShaders(const char* N, char* fnS, u32 fnS_size)
 }
 
 
-
 void dxRender_Visual::Load(const char* N, IReader* data, u32)
 {
     dbg_name = N;
@@ -115,9 +116,8 @@ void dxRender_Visual::Load(const char* N, IReader* data, u32)
         string256 fnT, fnS;
         data->r_stringZ(fnT, sizeof(fnT));
         data->r_stringZ(fnS, sizeof(fnS));
-        if (replaceShaders(N, fnS, sizeof fnS))
-        {
-            // Msg("~~[%s] replaced shaders for [%s]: %s", __FUNCTION__, N, fnS);
+        if (replaceShaders(N, fnS, sizeof fnS)) {
+            //Msg("~~[%s] replaced shaders for [%s]: %s", __FUNCTION__, N, fnS);
         }
         shader.create(fnS, fnT);
     }

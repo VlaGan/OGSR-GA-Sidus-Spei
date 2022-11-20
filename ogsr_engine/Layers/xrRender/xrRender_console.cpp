@@ -125,6 +125,8 @@ int ps_r1_SoftwareSkinning = 0; // r1-only
 float ps_r2_ssaLOD_A = 64.f;
 float ps_r2_ssaLOD_B = 48.f;
 
+float ps_r2_mask_control = 0.f;
+
 // R2-specific
 Flags32 ps_r2_ls_flags = {R2FLAG_SUN
                           //| R2FLAG_SUN_IGNORE_PORTALS
@@ -687,6 +689,8 @@ void xrRender_initconsole()
 #endif //	 DEBUG
 
     CMD4(CCC_Float, "r__dtex_range", &r__dtex_range, 5, 175);
+
+    CMD4(CCC_Float, "r2_mask_control", &ps_r2_mask_control, 0, 10);
 
     // Common
     CMD1(CCC_Screenshot, "screenshot");

@@ -33,8 +33,6 @@ void uber_deffer(CBlender_Compile& C, bool hq, LPCSTR _vspec, LPCSTR _pspec, BOO
     xr_strcpy(dt, sizeof(dt), _detail_replace ? _detail_replace : (C.detail_texture ? C.detail_texture : ""));
 
     // detect detail bump
-    //string256 texDetailBump = {'\0'};
-    //string256 texDetailBumpX = {'\0'};
     string256 texDetailBump{}, texDetailBumpX{};
     bool bHasDetailBump = false;
     if (C.bDetail_Bump)

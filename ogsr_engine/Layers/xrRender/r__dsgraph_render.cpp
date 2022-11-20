@@ -68,7 +68,7 @@ void __fastcall sorted_L1(mapSorted_Node* N)
     RCache.set_xform_world(N->val.Matrix);
     RImplementation.apply_object(N->val.pObject);
     RImplementation.apply_lmaterial();
-    //V->Render(calcLOD(N->key, V->vis.sphere.R));
+
     const float LOD = calcLOD(N->key, V->vis.sphere.R);
 #ifdef USE_DX11
     RCache.LOD.set_LOD(LOD);

@@ -319,6 +319,9 @@ void CRenderTarget::phase_combine()
     // Perform blooming filter and distortion if needed
     RCache.set_Stencil(FALSE);
 
+    if (ps_r2_mask_control > 0)
+        phase_gasmask_dudv();
+
     if (RImplementation.o.dx10_msaa)
     {
         // we need to resolve rt_Generic_1 into rt_Generic_1_r
@@ -492,6 +495,8 @@ void CRenderTarget::phase_combine()
         RCache.set_c("dof_params", dof.x, dof.y, dof.z, ps_r2_dof_sky);
         //.		RCache.set_c				("dof_params",	ps_r2_dof.x, ps_r2_dof.y, ps_r2_dof.z, ps_r2_dof_sky);
         RCache.set_c("dof_kernel", vDofKernel.x, vDofKernel.y, ps_r2_dof_kernel_size, 0);
+
+        RCache.set_c("mask_control", ps_r2_mask_control,0,1,0);
 
         RCache.set_Geometry(g_aa_AA);
         RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);

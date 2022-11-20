@@ -18,6 +18,7 @@
 #include "../xrRender/dxRenderDeviceRender.h"
 
 #include <d3dx/D3DX10Tex.h>
+#include <blender_gasmask_dudv.cpp>
 
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb)
 {
@@ -391,6 +392,11 @@ CRenderTarget::CRenderTarget()
     b_luminance = xr_new<CBlender_luminance>();
     b_combine = xr_new<CBlender_combine>();
     b_ssao = xr_new<CBlender_SSAO_noMSAA>();
+    
+    b_gasmask_dudv = xr_new<CBlender_gasmask_dudv>();
+
+
+    //s_gasmask_dudv.create(b_gasmask_dudv, "r2\\gasmask_dudv");
 
     // HDAO
     b_hdao_cs = xr_new<CBlender_CS_HDAO>();
@@ -431,6 +437,10 @@ CRenderTarget::CRenderTarget()
             static_cast<CBlender_SSAO_MSAA*>(b_ssao_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
         }
     }
+
+
+    s_gasmask_dudv.create(b_gasmask_dudv, "r3\\gasmask_dudv");
+
     //	NORMAL
     {
         u32 w = Device.dwWidth, h = Device.dwHeight;
@@ -1155,6 +1165,7 @@ CRenderTarget::~CRenderTarget()
     xr_delete(b_accum_point);
     xr_delete(b_accum_direct);
     xr_delete(b_ssao);
+    xr_delete(b_gasmask_dudv);
 
     if (RImplementation.o.dx10_msaa)
     {
@@ -1256,3 +1267,62 @@ bool CRenderTarget::use_minmax_sm_this_frame()
     default: return false;
     }
 }
+
+void CRenderTarget::phase_gasmask_dudv()
+{
+    // Constants
+    u32 Offset = 0;
+    u32 C = color_rgba(0, 0, 0, 255);
+
+    float d_Z = EPS_S;
+    float d_W = 1.0f;
+    float w = float(Device.dwWidth);
+    float h = float(Device.dwHeight);
+
+    Fvector2 p0, p1;
+#if defined(USE_DX10) || defined(USE_DX11)
+    p0.set(0.0f, 0.0f);
+    p1.set(1.0f, 1.0f);
+#else
+    p0.set(0.5f / w, 0.5f / h);
+    p1.set((w + 0.5f) / w, (h + 0.5f) / h);
+#endif
+
+    //////////////////////////////////////////////////////////////////////////
+    // Set MSAA/NonMSAA rendertarget
+#if defined(USE_DX10) || defined(USE_DX11)
+    ref_rt& dest_rt = RImplementation.o.dx10_msaa ? rt_Generic : rt_Color;
+    u_setrt(dest_rt, nullptr, nullptr, nullptr);
+#else
+    u_setrt(rt_Generic_0, nullptr, nullptr, nullptr);
+#endif
+
+    RCache.set_CullMode(CULL_NONE);
+    RCache.set_Stencil(FALSE);
+
+    // Fill vertex buffer
+    FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, Offset);
+    pv->set(0, float(h), d_Z, d_W, C, p0.x, p1.y);
+    pv++;
+    pv->set(0, 0, d_Z, d_W, C, p0.x, p0.y);
+    pv++;
+    pv->set(float(w), float(h), d_Z, d_W, C, p1.x, p1.y);
+    pv++;
+    pv->set(float(w), 0, d_Z, d_W, C, p1.x, p0.y);
+    pv++;
+    RCache.Vertex.Unlock(4, g_combine->vb_stride);
+
+    // Set pass
+    RCache.set_Element(s_gasmask_dudv->E[0]);
+
+    // Set paramterers
+    RCache.set_c("mask_control", ps_r2_mask_control,0,1,0);
+
+    // Set geometry
+    RCache.set_Geometry(g_combine);
+    RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+
+#if defined(USE_DX10) || defined(USE_DX11)
+    HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
+#endif
+};
