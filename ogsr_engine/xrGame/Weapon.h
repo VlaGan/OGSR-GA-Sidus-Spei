@@ -206,6 +206,14 @@ public:
 
     u16 GetAddonsState() const { return m_flagsAddOnState; };
     void SetAddonsState(u16 st) { m_flagsAddOnState = st; }
+    void ChangeScopeVision()
+    {
+        if (!m_second_scope_enable)
+            return;
+
+        is_second_scope = true ? !is_second_scope : false;
+    }
+
 
     //названия секций подключаемых аддонов
     shared_str m_sScopeName;
@@ -240,7 +248,7 @@ public:
     shared_str m_sHud_wpn_torch_bone;
     shared_str m_sHud_wpn_tacthandler_bone;
 
-    bool t_handler{};
+    bool t_handler{}, UseOtherAltScopeButton{};
 
 private:
     xr_vector<shared_str> hidden_bones;

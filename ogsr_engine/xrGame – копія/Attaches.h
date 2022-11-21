@@ -1,8 +1,0 @@
-#include "Scope.h"
-#include "Silencer.h"
-#include "GrenadeLauncher.h"
-#include "Bayonet.h"
-#include "Rail.h"
-#include "Laser.h"
-#include "TactTorch.h"
-#include "TactHandler.h"

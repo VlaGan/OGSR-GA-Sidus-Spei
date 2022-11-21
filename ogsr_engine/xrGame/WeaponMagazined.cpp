@@ -1081,8 +1081,8 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
         }
     }
     break;
-    case kSECONDSCOPE: {
-        if (flags & CMD_START)
+    /* case kSECONDSCOPE : {
+        if (flags & CMD_START && !UseOtherAltScopeButton)
         {
             if (IsZoomed())
                 ChangeScopeVision();
@@ -1090,7 +1090,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
             return true;
         }
     }
-    break;
+    break;*/
 
 
     }
@@ -1962,10 +1962,11 @@ bool CWeaponMagazined::ScopeRespawn(PIItem pIItem)
     }
     return false;
 }
-
+/*
 void CWeaponMagazined::ChangeScopeVision(){
     if (!m_second_scope_enable)
         return;
 
     is_second_scope = true ? !is_second_scope : false;
 }
+*/

@@ -241,6 +241,6 @@ protected:
 
     bool ScopeRespawn(PIItem);
 
- public:
-    void ChangeScopeVision();
+ //public:
+   // void ChangeScopeVision();
 };

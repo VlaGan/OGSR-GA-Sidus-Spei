@@ -148,15 +148,18 @@ void CHudItem::Load(LPCSTR section)
     m_safe_mode_offset[0][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_position", (Fvector{0.f, 0.f, 0.f})));
     m_safe_mode_offset[0][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_orientation", (Fvector{0.f, 0.f, 0.f})));
 
-    m_second_scope_offset[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_position", (Fvector{0.f, 0.f, 0.f})));
-    m_second_scope_offset[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_orientation", (Fvector{0.f, 0.f, 0.f})));
+    //m_second_scope_offset[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_position", (Fvector{0.f, 0.f, 0.f})));
+    //m_second_scope_offset[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_orientation", (Fvector{0.f, 0.f, 0.f})));
     m_second_scope_enable = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
-    fSscopeMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "second_scope_time", 0.3f);
+    //fSscopeMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "second_scope_time", 0.3f);
 
     m_walk_effect[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_position", (Fvector{0.f, 0.f, 0.f})));
     m_walk_effect[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_orientation", (Fvector{0.f, 0.f, 0.f})));
     fWalkMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_time", 0.7f);
     fWalkEffectRestoreFactor = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_restore_factor", 1.8f);
+
+    is_second_scope = false;
+    UseOtherAltScopeButton = READ_IF_EXISTS(pSettings, r_bool, section, "use_other_altscope_button", false);
 
     //Загрузка параметров инерции --#SM+# Begin--
     constexpr float PITCH_OFFSET_R = 0.0f; // Насколько сильно ствол смещается вбок (влево) при вертикальных поворотах камеры
@@ -965,7 +968,7 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
     {
         const bool bEnabled = m_strafe_offset[2][idx].x;
         if (!bEnabled)
-            goto AIM2;
+            goto SAFEMODE;
 
         // Рассчитываем фактор боковой ходьбы
         float fStrafeMaxTime = m_strafe_offset[2][idx].y; // Макс. время в секундах, за которое мы наклонимся из центрального положения
@@ -1025,11 +1028,13 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
     }
     //====================================================//
    
-
+/*
 AIM2 :{
         //if (!m_second_scope_enable && !is_second_scope && !IsZoomed())
            // goto SAFEMODE;
-
+    if (UseOtherAltScopeButton)
+        goto SAFEMODE;
+ 
         Fvector sscope_offs = m_second_scope_offset[0];
         Fvector sscope_rot = m_second_scope_offset[1];
 
@@ -1062,7 +1067,7 @@ AIM2 :{
 
         goto SAFEMODE;
     }
-
+    */
 SAFEMODE : {
         CActor* pAct = smart_cast<CActor*>(object().H_Parent());
         bool issafemode = pAct->GetSafemode();

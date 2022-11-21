@@ -185,7 +185,7 @@ public:
     virtual bool render_item_3d_ui_query() { return false; }
     virtual bool CheckCompatibility(CHudItem*) { return true; }
 
-    bool is_second_scope{}, m_second_scope_enable;
+    bool is_second_scope{}, m_second_scope_enable, UseOtherAltScopeButton;
     float fSscopeMaxTime{};
 
 protected:
@@ -316,7 +316,8 @@ private:
     u32 m_nearwall_last_call{};
 
     float m_fLR_MovingFactor{}, m_fLookout_MovingFactor{}, m_fJump_MovingFactor{}, mfSafeMode_SetFactor{}, mfSscope_Factor{}, mfWalkEffectSetFactor{};
-    Fvector m_strafe_offset[3][2]{}, m_lookout_offset[3][2]{}, m_jump_offset[3][2]{}, m_safe_mode_offset[1][2], m_second_scope_offset[2];
+    Fvector m_strafe_offset[3][2]{}, m_lookout_offset[3][2]{}, m_jump_offset[3][2]{}, m_safe_mode_offset[1][2];
+    //, m_second_scope_offset[2];
 
     Fvector m_walk_effect[2]{};
 
