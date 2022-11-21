@@ -275,9 +275,43 @@ static class cl_screen_params final : public R_constant_setup
     }
 } binder_screen_params;
 
+float ps_r2_puddles_wetness = 0.f;
+// да, -8 байт на херню
+int puddles_c1 = 0;
+int puddles_c2 = 0;
+
 static class cl_rain_params final : public R_constant_setup
 {
-    void setup(R_constant* C) override { RCache.set_c(C, g_pGamePersistent->Environment().CurrentEnv->rain_density, 0.0f, 0.0f, 0.0f); }
+    void updcounter() {
+        if (puddles_c1 < 2)
+            puddles_c1++;
+        else
+        {
+            puddles_c1 = 0;
+            puddles_c2++;
+        }
+        if (puddles_c2 > 5)
+            puddles_c2 = 0;
+    }
+
+    void setup(R_constant* C) override { 
+        float rain_density = g_pGamePersistent->Environment().CurrentEnv->rain_density;
+        if (puddles_c2 == 5)
+        {
+            if (rain_density != 0 && ps_r2_puddles_wetness < 1)
+                ps_r2_puddles_wetness += Device.fTimeDelta / 10;
+            else
+            {
+                if (ps_r2_puddles_wetness > 0)
+                    ps_r2_puddles_wetness -= Device.fTimeDelta / 10;
+            }
+        }
+
+        //ps_r2_puddles_wetness<0 ? ps_r2_puddles_wetness = 0 : ps_r2_puddles_wetness> 1 ? ps_r2_puddles_wetness = 1 
+        //: ps_r2_puddles_wetness = ps_r2_puddles_wetness;
+        RCache.set_c(C, rain_density, ps_r2_puddles_wetness, 0.0f, 0.0f);
+        updcounter();
+    }
 } binder_rain_params;
 
 static class cl_artifacts final : public R_constant_setup
@@ -412,6 +446,23 @@ static class cl_actor_params final : public R_constant_setup
     }
 } binder_actor_params;
 
+
+
+static class cl_inv_v : public R_constant_setup
+{
+    u32 marker;
+    Fmatrix result;
+
+    virtual void setup(R_constant* C)
+    {
+        result.invert(Device.mView);
+
+        RCache.set_c(C, result);
+    }
+} binder_inv_v;
+
+
+
 // Standart constant-binding
 void CBlender_Compile::SetMapping()
 {
@@ -423,6 +474,7 @@ void CBlender_Compile::SetMapping()
     r_Constant("m_WV", &binder_wv);
     r_Constant("m_VP", &binder_vp);
     r_Constant("m_WVP", &binder_wvp);
+    r_Constant("m_inv_V", &binder_inv_v);
 
     r_Constant("m_xform_v", &tree_binder_m_xform_v);
     r_Constant("m_xform", &tree_binder_m_xform);

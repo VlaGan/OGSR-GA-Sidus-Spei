@@ -232,7 +232,14 @@ void CBlender_BmmD::Compile(CBlender_Compile& C)
         C.r_dx10Texture("s_dnE_a", strconcat(sizeof(mask), mask, oA_Name, "_bump#"));
 
 #if RENDER == R_R4
-        C.r_dx10Texture("s_puddles", "shaders\\puddles");
+        //C.r_dx10Texture("s_puddles", "shaders\\puddles");
+
+        C.r_dx10Texture("s_puddles", "shaders\\water_normal");
+        C.r_dx10Texture("s_puddles_perlin", "shaders\\puddles_perlin");
+        C.r_dx10Texture("s_puddles_mask", strconcat(sizeof(mask), mask, C.L_textures[0].c_str(), "_puddles_mask"));
+        C.r_dx10Texture("s_rainsplash", "shaders\\water_sbumpvolume");
+
+
 #endif
         C.r_dx10Sampler("smp_base");
         C.r_dx10Sampler("smp_linear");

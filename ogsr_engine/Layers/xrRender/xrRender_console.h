@@ -37,6 +37,10 @@ extern ECORE_API float ps_r__Detail_density;
 
 extern ECORE_API float ps_r2_mask_control;
 
+extern ECORE_API float ps_r2_puddles_wetness;
+extern ECORE_API int puddles_c1;
+extern ECORE_API int puddles_c2;
+
 extern ECORE_API float ps_r__Tree_w_rot;
 extern ECORE_API float ps_r__Tree_w_speed;
 extern ECORE_API float ps_r__Tree_w_amp;
