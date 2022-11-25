@@ -50,6 +50,7 @@ public:
     IBlender* b_ssao;
     IBlender* b_ssao_msaa[8];
     IBlender* b_gasmask_dudv;
+    IBlender* b_dof;
 
     // compute shader for hdao
     IBlender* b_hdao_cs;
@@ -75,7 +76,6 @@ public:
     ref_rt rt_Position; // 64bit,	fat	(x,y,z,?)				(eye-space)
     ref_rt rt_Normal; // 64bit,	fat	(x,y,z,hemi)			(eye-space)
     ref_rt rt_Color; // 64/32bit,fat	(r,g,b,specular-gloss)	(or decompressed MET-8-8-8-8)
-
     //
     ref_rt rt_Accumulator; // 64bit		(r,g,b,specular)
     ref_rt rt_Accumulator_temp; // only for HW which doesn't feature fp16 blend
@@ -92,7 +92,7 @@ public:
     ref_rt rt_Bloom_2; // 32bit, dim/4	(r,g,b,?)
     ref_rt rt_LUM_64; // 64bit, 64x64,	log-average in all components
     ref_rt rt_LUM_8; // 64bit, 8x8,		log-average in all components
-
+    ref_rt rt_dof;
     ref_rt rt_LUM_pool[CHWCaps::MAX_GPUS * 2]; // 1xfp32,1x1,		exp-result -> scaler
     ref_texture t_LUM_src; // source
     ref_texture t_LUM_dest; // destination & usage for current frame
@@ -204,7 +204,7 @@ private:
     ref_shader s_combine_volumetric;
 
     ref_shader s_gasmask_dudv;
-
+    ref_shader s_dof;
     ref_shader s_rain_drops;
 
 public:
@@ -319,6 +319,7 @@ public:
     void phase_pp();
     void PhaseRainDrops();
     void phase_gasmask_dudv();
+    void phase_dof();
 
     virtual void set_blur(float f) { param_blur = f; }
     virtual void set_gray(float f) { param_gray = f; }

@@ -239,7 +239,7 @@ void CBlender_BmmD::Compile(CBlender_Compile& C)
         C.r_dx10Texture("s_puddles_mask", strconcat(sizeof(mask), mask, C.L_textures[0].c_str(), "_puddles_mask"));
         C.r_dx10Texture("s_rainsplash", "shaders\\water_sbumpvolume");
 
-
+         C.r_dx10Texture("s_blur_2", "$user$blur_2");
 #endif
         C.r_dx10Sampler("smp_base");
         C.r_dx10Sampler("smp_linear");

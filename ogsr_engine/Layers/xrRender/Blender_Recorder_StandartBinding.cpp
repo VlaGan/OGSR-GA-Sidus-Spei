@@ -290,13 +290,13 @@ static class cl_rain_params final : public R_constant_setup
             puddles_c1 = 0;
             puddles_c2++;
         }
-        if (puddles_c2 > 5)
+        if (puddles_c2 > 25)
             puddles_c2 = 0;
     }
 
     void setup(R_constant* C) override { 
         float rain_density = g_pGamePersistent->Environment().CurrentEnv->rain_density;
-        if (puddles_c2 == 5)
+        if (puddles_c2 == 25)
         {
             if (rain_density != 0 && ps_r2_puddles_wetness < 1)
                 ps_r2_puddles_wetness += Device.fTimeDelta / 10;
@@ -307,9 +307,8 @@ static class cl_rain_params final : public R_constant_setup
             }
         }
 
-        //ps_r2_puddles_wetness<0 ? ps_r2_puddles_wetness = 0 : ps_r2_puddles_wetness> 1 ? ps_r2_puddles_wetness = 1 
-        //: ps_r2_puddles_wetness = ps_r2_puddles_wetness;
         RCache.set_c(C, rain_density, ps_r2_puddles_wetness, 0.0f, 0.0f);
+
         updcounter();
     }
 } binder_rain_params;
@@ -463,6 +462,73 @@ static class cl_inv_v : public R_constant_setup
 
 
 
+// Sneaky debug stuff
+Fvector4 ps_dev_param_1 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_2 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_3 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_4 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_5 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_6 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_7 = {0.f, 0.f, 0.f, 0.f};
+Fvector4 ps_dev_param_8 = {0.f, 0.f, 0.f, 0.f};
+
+static class dev_param_1 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_1.x, ps_dev_param_1.y, ps_dev_param_1.z, ps_dev_param_1.w); }
+} dev_param_1;
+
+static class dev_param_2 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_2.x, ps_dev_param_2.y, ps_dev_param_2.z, ps_dev_param_2.w); }
+} dev_param_2;
+
+static class dev_param_3 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_3.x, ps_dev_param_3.y, ps_dev_param_3.z, ps_dev_param_3.w); }
+} dev_param_3;
+
+static class dev_param_4 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_4.x, ps_dev_param_4.y, ps_dev_param_4.z, ps_dev_param_4.w); }
+} dev_param_4;
+
+static class dev_param_5 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_5.x, ps_dev_param_5.y, ps_dev_param_5.z, ps_dev_param_5.w); }
+} dev_param_5;
+
+static class dev_param_6 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_6.x, ps_dev_param_6.y, ps_dev_param_6.z, ps_dev_param_6.w); }
+} dev_param_6;
+
+static class dev_param_7 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_7.x, ps_dev_param_7.y, ps_dev_param_7.z, ps_dev_param_7.w); }
+} dev_param_7;
+
+static class dev_param_8 : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_8.x, ps_dev_param_8.y, ps_dev_param_8.z, ps_dev_param_8.w); }
+} dev_param_8;
+
+
+static class ssfx_wpn_dof_1 : public R_constant_setup 
+{
+    virtual void setup(R_constant * C) {
+        RCache.set_c(C, ps_ssfx_wpn_dof_1.x, ps_ssfx_wpn_dof_1.y, ps_ssfx_wpn_dof_1.z, ps_ssfx_wpn_dof_1.w);
+    }
+}
+ssfx_wpn_dof_1;
+ static class ssfx_wpn_dof_2:public R_constant_setup  {
+     virtual void setup(R_constant * C) {
+         RCache.set_c(C, ps_ssfx_wpn_dof_2, 0, 0, 0);
+     }
+}
+ssfx_wpn_dof_2;
+
+
+
 // Standart constant-binding
 void CBlender_Compile::SetMapping()
 {
@@ -484,6 +550,9 @@ void CBlender_Compile::SetMapping()
     r_Constant("c_scale", &tree_binder_c_scale);
     r_Constant("c_bias", &tree_binder_c_bias);
     r_Constant("c_sun", &tree_binder_c_sun);
+
+    r_Constant("ssfx_wpn_dof_1", &ssfx_wpn_dof_1);
+    r_Constant("ssfx_wpn_dof_2", &ssfx_wpn_dof_2);
 
     // hemi cube
     r_Constant("L_material", &binder_material);
@@ -549,6 +618,20 @@ void CBlender_Compile::SetMapping()
     r_Constant("m_affects", &binder_pda_params);
 
     r_Constant("m_actor_params", &binder_actor_params);
+
+
+
+    	// Shader stuff
+    r_Constant("shader_param_1", &dev_param_1);
+    r_Constant("shader_param_2", &dev_param_2);
+    r_Constant("shader_param_3", &dev_param_3);
+    r_Constant("shader_param_4", &dev_param_4);
+    r_Constant("shader_param_5", &dev_param_5);
+    r_Constant("shader_param_6", &dev_param_6);
+    r_Constant("shader_param_7", &dev_param_7);
+    r_Constant("shader_param_8", &dev_param_8);
+
+
 
     // other common
     for (const auto& [name, s] : DEV->v_constant_setup)

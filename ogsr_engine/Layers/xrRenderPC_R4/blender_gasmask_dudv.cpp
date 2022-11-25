@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "blender_gasmask_dudv.h"
-
+#include "r2_types.h"
 CBlender_gasmask_dudv::CBlender_gasmask_dudv() { description.CLS = 0; }
 
 CBlender_gasmask_dudv::~CBlender_gasmask_dudv()

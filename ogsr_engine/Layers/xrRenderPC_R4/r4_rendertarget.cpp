@@ -19,6 +19,7 @@
 
 #include <d3dx/D3DX10Tex.h>
 #include <blender_gasmask_dudv.cpp>
+#include "blender_dof.cpp"
 
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb)
 {
@@ -392,11 +393,11 @@ CRenderTarget::CRenderTarget()
     b_luminance = xr_new<CBlender_luminance>();
     b_combine = xr_new<CBlender_combine>();
     b_ssao = xr_new<CBlender_SSAO_noMSAA>();
+    b_dof = xr_new<CBlender_dof>();
     
     b_gasmask_dudv = xr_new<CBlender_gasmask_dudv>();
 
 
-    //s_gasmask_dudv.create(b_gasmask_dudv, "r2\\gasmask_dudv");
 
     // HDAO
     b_hdao_cs = xr_new<CBlender_CS_HDAO>();
@@ -440,7 +441,7 @@ CRenderTarget::CRenderTarget()
 
 
     s_gasmask_dudv.create(b_gasmask_dudv, "r3\\gasmask_dudv");
-
+    s_dof.create(b_dof, "r3\\depth_on_field");
     //	NORMAL
     {
         u32 w = Device.dwWidth, h = Device.dwHeight;
@@ -489,6 +490,8 @@ CRenderTarget::CRenderTarget()
         // generic(LDR) RTs
         rt_Generic_0.create(r2_RT_generic0, w, h, D3DFMT_A8R8G8B8, 1);
         rt_Generic_1.create(r2_RT_generic1, w, h, D3DFMT_A8R8G8B8, 1);
+
+        rt_dof.create(r2_RT_dof, w, h, D3DFMT_A8R8G8B8, 1);
 
         if (RImplementation.o.dx10_msaa)
             rt_Generic_0_temp.create(r2_RT_generic0_temp, w, h, D3DFMT_A8R8G8B8, SampleCount);
@@ -1166,6 +1169,7 @@ CRenderTarget::~CRenderTarget()
     xr_delete(b_accum_direct);
     xr_delete(b_ssao);
     xr_delete(b_gasmask_dudv);
+    xr_delete(b_dof);
 
     if (RImplementation.o.dx10_msaa)
     {
@@ -1322,6 +1326,100 @@ void CRenderTarget::phase_gasmask_dudv()
     RCache.set_Geometry(g_combine);
     RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 
+#if defined(USE_DX10) || defined(USE_DX11)
+    HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
+#endif
+};
+
+
+void CRenderTarget::phase_dof()
+{
+    // Constants
+    u32 Offset = 0;
+    u32 C = color_rgba(0, 0, 0, 255);
+
+    float d_Z = EPS_S;
+    float d_W = 1.0f;
+    float w = float(Device.dwWidth);
+    float h = float(Device.dwHeight);
+
+    Fvector2 p0, p1;
+#if defined(USE_DX10) || defined(USE_DX11)
+    p0.set(0.0f, 0.0f);
+    p1.set(1.0f, 1.0f);
+#else
+    p0.set(0.5f / w, 0.5f / h);
+    p1.set((w + 0.5f) / w, (h + 0.5f) / h);
+#endif
+
+    // DoF vectors
+    Fvector2 vDofKernel;
+    vDofKernel.set(0.5f / Device.dwWidth, 0.5f / Device.dwHeight);
+    vDofKernel.mul(ps_r2_dof_kernel_size);
+    Fvector3 dof;
+    g_pGamePersistent->GetCurrentDof(dof);
+
+    //////////////////////////////////////////////////////////////////////////
+    // Set MSAA/NonMSAA rendertarget
+    u_setrt(rt_dof, 0, 0, HW.pBaseZB);
+
+    RCache.set_CullMode(CULL_NONE);
+    RCache.set_Stencil(FALSE);
+
+    // Fill vertex buffer
+    FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, Offset);
+    pv->set(0, float(h), d_Z, d_W, C, p0.x, p1.y);
+    pv++;
+    pv->set(0, 0, d_Z, d_W, C, p0.x, p0.y);
+    pv++;
+    pv->set(float(w), float(h), d_Z, d_W, C, p1.x, p1.y);
+    pv++;
+    pv->set(float(w), 0, d_Z, d_W, C, p1.x, p0.y);
+    pv++;
+    RCache.Vertex.Unlock(4, g_combine->vb_stride);
+
+    // Set pass
+    RCache.set_Element(s_dof->E[0]);
+
+    // Set paramterers
+    // RCache.set_c("taa_params", ps_taa_params.x, ps_taa_params.y, 0, 0);
+    //RCache.set_c("dof_params", dof.x, dof.y, dof.z, ps_r2_dof_sky);
+    //RCache.set_c("dof_kernel", vDofKernel.x, vDofKernel.y, ps_r2_dof_kernel_size, 0);
+
+    // Set geometry
+    RCache.set_Geometry(g_combine);
+    RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+    ////////////////////////////////////////////////////////////////////////////
+#if defined(USE_DX10) || defined(USE_DX11)
+    ref_rt& dest_rt = RImplementation.o.dx10_msaa ? rt_Generic : rt_Color;
+    u_setrt(dest_rt, nullptr, nullptr, nullptr);
+#else
+    u_setrt(rt_Generic_0, nullptr, nullptr, nullptr);
+#endif
+
+    RCache.set_CullMode(CULL_NONE);
+    RCache.set_Stencil(FALSE);
+
+    // Fill vertex buffer
+    pv = (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, Offset);
+    pv->set(0, float(h), d_Z, d_W, C, p0.x, p1.y);
+    pv++;
+    pv->set(0, 0, d_Z, d_W, C, p0.x, p0.y);
+    pv++;
+    pv->set(float(w), float(h), d_Z, d_W, C, p1.x, p1.y);
+    pv++;
+    pv->set(float(w), 0, d_Z, d_W, C, p1.x, p0.y);
+    pv++;
+    RCache.Vertex.Unlock(4, g_combine->vb_stride);
+
+    // Set pass
+    RCache.set_Element(s_dof->E[1]);
+
+    // Set geometry
+    RCache.set_Geometry(g_combine);
+    RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+
+    // Resolve RT
 #if defined(USE_DX10) || defined(USE_DX11)
     HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
 #endif

@@ -41,6 +41,19 @@ extern ECORE_API float ps_r2_puddles_wetness;
 extern ECORE_API int puddles_c1;
 extern ECORE_API int puddles_c2;
 
+extern ECORE_API Fvector4 ps_dev_param_1;
+extern ECORE_API Fvector4 ps_dev_param_2;
+extern ECORE_API Fvector4 ps_dev_param_3;
+extern ECORE_API Fvector4 ps_dev_param_4;
+extern ECORE_API Fvector4 ps_dev_param_5;
+extern ECORE_API Fvector4 ps_dev_param_6;
+extern ECORE_API Fvector4 ps_dev_param_7;
+extern ECORE_API Fvector4 ps_dev_param_8;
+
+extern ECORE_API Fvector4 ps_ssfx_wpn_dof_1;
+extern ECORE_API float ps_ssfx_wpn_dof_2;
+
+
 extern ECORE_API float ps_r__Tree_w_rot;
 extern ECORE_API float ps_r__Tree_w_speed;
 extern ECORE_API float ps_r__Tree_w_amp;

@@ -126,6 +126,8 @@ float ps_r2_ssaLOD_A = 64.f;
 float ps_r2_ssaLOD_B = 48.f;
 
 float ps_r2_mask_control = 0.f;
+Fvector4 ps_ssfx_wpn_dof_1 = {.0f, .0f, .0f, .0f};
+float ps_ssfx_wpn_dof_2 = 1.0f;
 
 // R2-specific
 Flags32 ps_r2_ls_flags = {R2FLAG_SUN
@@ -821,6 +823,22 @@ void xrRender_initconsole()
     CMD4(CCC_Float, "r_sslr_l", &ps_ext_SSLR_L, .1f, 10.f);
 #endif
 
+
+    	// Shader param stuff
+    Fvector4 tw2_min1 = {-100.f, -100.f, -100.f, -100.f};
+    Fvector4 tw2_max1 = {100.f, 100.f, 100.f, 100.f};
+    CMD4(CCC_Vector4, "shader_param_1", &ps_dev_param_1, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_2", &ps_dev_param_2, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_3", &ps_dev_param_3, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_4", &ps_dev_param_4, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_5", &ps_dev_param_5, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_6", &ps_dev_param_6, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_7", &ps_dev_param_7, tw2_min1, tw2_max1);
+    CMD4(CCC_Vector4, "shader_param_8", &ps_dev_param_8, tw2_min1, tw2_max1);
+
+    CMD4(CCC_Vector4, "ssfx_wpn_dof_1", &ps_ssfx_wpn_dof_1, tw2_min1, tw2_max1);
+    CMD4(CCC_Float, "ssfx_wpn_dof_2", &ps_ssfx_wpn_dof_2, 0, 1);
+
     CMD3(CCC_Mask, "r_terrain_parallax_enable", &ps_r2_ls_flags_ext, R2FLAGEXT_TERRAIN_PARALLAX);
     CMD3(CCC_Mask, "r_mt_texload", &ps_r2_ls_flags_ext, R2FLAGEXT_MT_TEXLOAD);
 
@@ -958,12 +976,12 @@ void xrRender_initconsole()
     CMD4(CCC_Integer, "r3_dynamic_wet_surfaces_sm_res", &ps_r3_dyn_wet_surf_sm_res, 64, 2048);
     CMD4(CCC_Integer, "r3_dynamic_wet_surfaces_enable_streaks", &ps_r3_dyn_wet_surf_enable_streaks, 0, 1);
 
-#if 0 // KRodin: оно странно выглядит, поэтому выключаю. Чтоб нормально выглядело надо уметь настраивать near/far. Но лучше не разрешать это крутить, во избежание. А то накрутят
-      // себе...
+//#if 0 // KRodin: оно странно выглядит, поэтому выключаю. Чтоб нормально выглядело надо уметь настраивать near/far. Но лучше не разрешать это крутить, во избежание. А то накрутят
+ //     // себе...
 	CMD4(CCC_Integer, "r3_dynamic_wet_surfaces_opt", &ps_r3_dyn_wet_surf_opt, 0, 1);
 	CMD4(CCC_Float, "r3_dynamic_wet_surfaces_near", &ps_r3_dyn_wet_surf_near, 5, 70);
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_far",	&ps_r3_dyn_wet_surf_far,	30,	100		);
-#endif
+//#endif
 
     CMD3(CCC_Mask, "r3_volumetric_smoke", &ps_r2_ls_flags, R3FLAG_VOLUMETRIC_SMOKE);
     CMD1(CCC_memory_stats, "render_memory_stats");
