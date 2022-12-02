@@ -441,7 +441,7 @@ CRenderTarget::CRenderTarget()
 
 
     s_gasmask_dudv.create(b_gasmask_dudv, "r3\\gasmask_dudv");
-    s_dof.create(b_dof, "r3\\depth_on_field");
+    //s_dof.create(b_dof, "r3\\depth_on_field");
     //	NORMAL
     {
         u32 w = Device.dwWidth, h = Device.dwHeight;
