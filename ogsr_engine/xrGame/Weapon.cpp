@@ -29,7 +29,7 @@
 #include "GamePersistent.h"
 #include "../xr_3da/x_ray.h"
 
-#define ROTATION_TIME 0.25f
+#define ROTATION_TIME 0.3f
 
 extern ENGINE_API Fvector4 w_states;
 extern ENGINE_API Fvector3 w_timers;
@@ -80,11 +80,11 @@ CWeapon::CWeapon(LPCSTR name)
     m_UIScope = nullptr;
     m_set_next_ammoType_on_reload = u32(-1);
 }
-
+extern int scope_2dtexactive;
 CWeapon::~CWeapon()
 {
     xr_delete(m_UIScope);
-
+    scope_2dtexactive = 0;
     laser_light_render.destroy();
     flashlight_render.destroy();
     flashlight_omni.destroy();
@@ -355,6 +355,7 @@ void CWeapon::Load(LPCSTR section)
     m_bIgnoreScopeTexture = !!READ_IF_EXISTS(pSettings, r_bool, section, "ignore_scope_texture", false);
 
     m_fZoomRotateTime = READ_IF_EXISTS(pSettings, r_float, hud_sect, "zoom_rotate_time", ROTATION_TIME);
+    m_fZoomRotateTimeStart = m_fZoomRotateTime;
 
     m_bScopeDynamicZoom = false;
     m_fScopeZoomFactor = 0;
@@ -1223,6 +1224,7 @@ void CWeapon::UpdatePosition(const Fmatrix& trans)
     VERIFY(!fis_zero(DET(renderable.xform)));
 }
 
+extern bool IsAltScope;
 bool CWeapon::Action(s32 cmd, u32 flags)
 {
     if (inherited::Action(cmd, flags))
@@ -1236,9 +1238,7 @@ bool CWeapon::Action(s32 cmd, u32 flags)
             if (ParentIsActor())
             {
                 auto pAct = smart_cast<CActor*>(H_Parent());
-                bool issafemode = pAct->GetSafemode();
-
-                if (issafemode)
+                if (pAct->GetSafemode())
                 {
                     pAct->SetSafemode(false);
                     return false;
@@ -1287,10 +1287,13 @@ bool CWeapon::Action(s32 cmd, u32 flags)
         return true;
 
     case kWPN_ZOOM: {
-        if (IsZoomEnabled() && !is_second_scope)
+        if (IsZoomEnabled())
         {
             if (flags & CMD_START && !IsPending())
             {
+                if (auto pAct = smart_cast<CActor*>(H_Parent()))
+                    SetZoomRotateFactor(m_fZoomRotateTimeStart + pAct->GetZoomParam(m_fZoomRotateTimeStart));
+
                 if (psActorFlags.is(AF_WPN_AIM_TOGGLE) && IsZoomed())
                 {
                     OnZoomOut();
@@ -1310,6 +1313,9 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 
     case kWPN_ZOOM_INC:
     case kWPN_ZOOM_DEC: {
+        if (m_fAltScopeActive)
+            return false;
+
         if (IsZoomEnabled() && IsZoomed() && m_bScopeDynamicZoom && IsScopeAttached() && (flags & CMD_START))
         {
             // если в режиме ПГ - не будем давать использовать динамический зум
@@ -1325,44 +1331,17 @@ bool CWeapon::Action(s32 cmd, u32 flags)
     }
     case kSECONDSCOPE: {
 
-            /*if (m_second_scope_enable)
-            {
-                if (is_second_scope)
-                {
-                    OnZoomOut();
-                    is_second_scope = false;
-                }
-                else
-                {
-                    OnZoomIn();
-                    is_second_scope = true;
-                }
-               
-            }*/
-        if (IsZoomEnabled() && m_second_scope_enable)
+        if (flags & CMD_START && IsZoomed() && m_fAltScopeInstalled) 
         {
-            if (flags & CMD_START && !IsPending())
-            {
-                if (psActorFlags.is(AF_WPN_AIM_TOGGLE) && IsZoomed() && is_second_scope)
-                {
-                    OnZoomOut();
-                    is_second_scope = false;
-                }
-                else
-                {
-                    OnZoomIn();
-                    is_second_scope = true;
-                }
-            }
-            else if (IsZoomed() && !psActorFlags.is(AF_WPN_AIM_TOGGLE))
-            {
-                OnZoomOut();
-                is_second_scope = false;
-            }
+            m_fAltScopeActive = !m_fAltScopeActive;
+            // меняем коефф зума
+            m_fAltScopeActive ? m_fZoomFactor = m_fIronSightZoomFactor: m_fZoomFactor = CurrentZoomFactor();
+
+            // в шейдеры для фейк 3д скопа
+            IsAltScope = m_fAltScopeActive;
             return true;
         }
-        else
-            return false;
+        return false;
     }
 
 
@@ -1385,7 +1364,7 @@ void CWeapon::ZoomChange(bool inc)
 {
     bool wasChanged = false;
 
-    if (SecondVPEnabled())
+    if (SecondVPEnabled() || m_fAltScopeActive)
     {
         float delta, min_zoom_factor;
         GetZoomData(m_fSecondVPZoomFactor, delta, min_zoom_factor);
@@ -1407,8 +1386,8 @@ void CWeapon::ZoomChange(bool inc)
     }
     else
     {
-        if (!is_second_scope)
-        {
+        //if (!m_fAltScopeActive)
+        //{
             float delta, min_zoom_factor;
             GetZoomData(m_fScopeZoomFactor, delta, min_zoom_factor);
 
@@ -1430,7 +1409,7 @@ void CWeapon::ZoomChange(bool inc)
             if (H_Parent() && !IsRotatingToZoom() && !SecondVPEnabled())
                 m_fRTZoomFactor = m_fZoomFactor; // store current
         }
-    }
+    //}
 
     if (wasChanged)
     {
@@ -1967,7 +1946,7 @@ float CWeapon::CurrentZoomFactor()
 {
     if (SecondVPEnabled())
         return Core.Features.test(xrCore::Feature::ogse_wpn_zoom_system) ? 1.0f : m_fIronSightZoomFactor; // no change to main fov zoom when use second vp
-    else if (IsScopeAttached() && !is_second_scope)
+    else if (IsScopeAttached() && !m_fAltScopeActive)
         return m_fScopeZoomFactor;
     else
         return m_fIronSightZoomFactor;
@@ -1980,7 +1959,7 @@ void CWeapon::OnZoomIn()
     // если в режиме ПГ - не будем давать включать динамический зум
     if (m_bScopeDynamicZoom && !IsGrenadeMode() && !SecondVPEnabled())
         m_fZoomFactor = m_fRTZoomFactor;
-    else if (is_second_scope)
+    else if (m_fAltScopeActive)
         m_fZoomFactor = m_fRTZoomFactor;
     else
         m_fZoomFactor = CurrentZoomFactor();
@@ -2003,6 +1982,8 @@ void CWeapon::OnZoomIn()
 
 void CWeapon::OnZoomOut()
 {
+    m_fAltScopeActive = false;
+    IsAltScope = false;
     m_fZoomFactor = Core.Features.test(xrCore::Feature::ogse_wpn_zoom_system) ? 1.f : g_fov;
 
     if (m_bZoomMode)
@@ -2034,10 +2015,13 @@ bool CWeapon::UseScopeTexture()
 
 CUIStaticItem* CWeapon::ZoomTexture()
 {
-    if (UseScopeTexture() && !is_second_scope)
+    if (UseScopeTexture() && !m_fAltScopeActive)
         return m_UIScope;
     else
+    {
+        scope_2dtexactive = 0;
         return NULL;
+    }
 }
 
 void CWeapon::SwitchState(u32 S)
@@ -2059,6 +2043,7 @@ void CWeapon::SwitchState(u32 S)
         P.w_u8(u8(m_set_next_ammoType_on_reload & 0xff));
         CHudItem::object().u_EventSend(P, net_flags(TRUE, TRUE, FALSE, TRUE));
     }
+    scope_2dtexactive = ZoomTexture() ? 1 : 0;
 }
 
 void CWeapon::OnMagazineEmpty() { VERIFY((u32)iAmmoElapsed == m_magazine.size()); }
@@ -2198,8 +2183,10 @@ bool CWeapon::ready_to_kill() const { return (!IsMisfire() && ((GetState() == eI
 // Получить индекс текущих координат худа
 u8 CWeapon::GetCurrentHudOffsetIdx() const
 {
-    const bool b_aiming = ((IsZoomed() && m_fZoomRotationFactor <= 1.f) || (!IsZoomed() && m_fZoomRotationFactor > 0.f));
-    if (is_second_scope)
+    const bool b_aiming = ((IsZoomed() && m_fZoomRotationFactor <= 1.f) || (!IsZoomed() && m_fZoomRotationFactor > 0.f) || (!IsZoomed() && m_fAltScopeFactor) ||
+                           (IsZoomed() && m_fAltScopeFactor <= 1.f));
+
+    if (m_fAltScopeActive && m_fAltScopeInstalled)
         return hud_item_measures::m_hands_offset_type_aim2;
 
     if (b_aiming)
@@ -2438,7 +2425,7 @@ void CWeapon::UpdateSecondVP()
     bool b_is_active_item = inv_owner && (inv_owner->m_inventory->ActiveItem() == this);
     R_ASSERT(b_is_active_item); // Эта функция должна вызываться только для оружия в руках нашего игрока
 
-    bool bCond_1 = m_fZoomRotationFactor > 0.05f; // Мы должны целиться
+    bool bCond_1 = m_fZoomRotationFactor > 0.05f || m_fAltScopeFactor > 0.05f; // Мы должны целиться
     bool bCond_3 = pActor->cam_Active() == pActor->cam_FirstEye(); // Мы должны быть от 1-го лица
 
     Device.m_SecondViewport.SetSVPActive(bCond_1 && bCond_3 && SecondVPEnabled());
@@ -2449,9 +2436,8 @@ bool CWeapon::SecondVPEnabled() const
     bool bCond_2 = m_fSecondVPZoomFactor > 0.0f; // В конфиге должен быть прописан фактор зума (scope_lense_fov_factor) больше чем 0
     bool bCond_4 = !IsGrenadeMode(); // Мы не должны быть в режиме подствольника
     bool bcond_6 = psActorFlags.test(AF_3D_SCOPES);
-    bool bcond_8 = !is_second_scope;
 
-    return bCond_2 && bCond_4 && bcond_6 && bcond_8;
+    return bCond_2 && bCond_4 && bcond_6;
 }
 
 // Чувствительность мышкии с оружием в руках во время прицеливания
@@ -2489,7 +2475,7 @@ float CWeapon::GetHudFov()
 {
     const float last_nw_hf = inherited::GetHudFov();
 
-    if (m_fZoomRotationFactor > 0.0f)
+    if (m_fZoomRotationFactor > 0.0f) // || m_fAltScopeFactor > 0.0f)
     {
         if (SecondVPEnabled() && m_fSecondVPHudFov > 0.0f)
         {

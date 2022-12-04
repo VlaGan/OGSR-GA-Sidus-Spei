@@ -993,7 +993,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
     {
     case kWPN_RELOAD: {
         if (!Core.Features.test(xrCore::Feature::lock_reload_in_sprint) || (!ParentIsActor() || !(g_actor->get_state() & mcSprint)))
-            if (flags & CMD_START && !is_second_scope && !IsZoomed())
+            if (flags & CMD_START && !m_fAltScopeActive && !IsZoomed())
                 if (iAmmoElapsed < iMagazineSize || (IsMisfire() && !IsGrenadeMode()))
                     Reload();
     }
@@ -1001,7 +1001,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
     case kWPN_FIREMODE_PREV: {
         if (flags & CMD_START)
         {
-            if (!is_second_scope && !IsZoomed())
+            if (!m_fAltScopeActive && !IsZoomed())
                 OnPrevFireMode();
             return true;
         }
@@ -1009,7 +1009,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
     case kSAFEMODE: {
         if (flags & CMD_START)
         {
-            if (!is_second_scope && !IsZoomed())
+            if (!m_fAltScopeActive && !IsZoomed())
             {
                 CActor* pAct = smart_cast<CActor*>(H_Parent());
                 if (pAct->GetSafemode())
@@ -1024,7 +1024,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
     case kWPN_FIREMODE_NEXT: {
         if (flags & CMD_START)
         {
-            if (!is_second_scope && !IsZoomed())
+            if (!m_fAltScopeActive && !IsZoomed())
                 OnNextFireMode();
             return true;
         }
@@ -1331,6 +1331,8 @@ bool CWeaponMagazined::Detach(const char* item_section_name, bool b_spawn_item)
         return inherited::Detach(item_section_name, b_spawn_item);
 }
 
+
+extern int scope_2dtexactive;
 void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
 {
     m_fMinZoomK = def_min_zoom_k;
@@ -1365,8 +1367,10 @@ void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
     m_fSecondVPHudFov = READ_IF_EXISTS(pSettings, r_float, section, "scope_lense_hud_fov", 0.0f);
 
     if (m_UIScope)
+    {
         xr_delete(m_UIScope);
-
+        scope_2dtexactive = 0;
+    }
     if (useTexture)
     {
         shared_str scope_tex_name = READ_IF_EXISTS(pSettings, r_string, section, "scope_texture", "");
@@ -1378,7 +1382,6 @@ void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
         }
     }
 }
-
 void CWeaponMagazined::InitAddons()
 {
     //////////////////////////////////////////////////////////////////////////
@@ -1962,11 +1965,3 @@ bool CWeaponMagazined::ScopeRespawn(PIItem pIItem)
     }
     return false;
 }
-/*
-void CWeaponMagazined::ChangeScopeVision(){
-    if (!m_second_scope_enable)
-        return;
-
-    is_second_scope = true ? !is_second_scope : false;
-}
-*/

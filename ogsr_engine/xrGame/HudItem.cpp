@@ -23,6 +23,8 @@
 
 ENGINE_API extern float psHUD_FOV_def;
 
+#define ROTATION_TIME 0.3f
+
 CHudItem::CHudItem()
 {
     m_huditem_flags.zero();
@@ -148,18 +150,16 @@ void CHudItem::Load(LPCSTR section)
     m_safe_mode_offset[0][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_position", (Fvector{0.f, 0.f, 0.f})));
     m_safe_mode_offset[0][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_orientation", (Fvector{0.f, 0.f, 0.f})));
 
-    //m_second_scope_offset[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_position", (Fvector{0.f, 0.f, 0.f})));
-    //m_second_scope_offset[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "second_scope_orientation", (Fvector{0.f, 0.f, 0.f})));
-    m_second_scope_enable = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
-    //fSscopeMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "second_scope_time", 0.3f);
+    m_fAltScopeInstalled = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
+
+    // Для не оружия (ПДА,например)
+    if (!m_fZoomRotateTimeStart)
+        m_fZoomRotateTimeStart = ROTATION_TIME;
 
     m_walk_effect[0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_position", (Fvector{0.f, 0.f, 0.f})));
     m_walk_effect[1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "walk_effect_orientation", (Fvector{0.f, 0.f, 0.f})));
     fWalkMaxTime = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_time", 0.7f);
     fWalkEffectRestoreFactor = READ_IF_EXISTS(pSettings, r_float, section, "walk_effect_restore_factor", 1.8f);
-
-    is_second_scope = false;
-    UseOtherAltScopeButton = READ_IF_EXISTS(pSettings, r_bool, section, "use_other_altscope_button", false);
 
     //Загрузка параметров инерции --#SM+# Begin--
     constexpr float PITCH_OFFSET_R = 0.0f; // Насколько сильно ствол смещается вбок (влево) при вертикальных поворотах камеры
@@ -689,7 +689,8 @@ bool CHudItem::used_cop_fire_point() const
 
 bool CHudItem::CollisionAllowed() const
 { //Если выкл реалистичный прицел или у ствола ТЧ-стайл фейр поинт или ствол в режиме зума - коллизия работать не будет.
-    return m_nearwall_on && psHUD_Flags.test(HUD_CROSSHAIR_HARD) && used_cop_fire_point() && m_fZoomRotationFactor < 1.0f;
+    return m_nearwall_on && psHUD_Flags.test(HUD_CROSSHAIR_HARD) && used_cop_fire_point() && m_fZoomRotationFactor < 1.0f && m_fAltScopeFactor < 1.f;
+ 
 }
 
 void CHudItem::UpdateCollision(Fmatrix& trans)
@@ -937,27 +938,121 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
     Fvector summary_offset{}, summary_rotate{};
 
     attachable_hud_item* hi = HudItemData();
-    u8 idx = GetCurrentHudOffsetIdx();
-    const bool b_aiming = idx != hud_item_measures::m_hands_offset_type_normal;
+    u8 idx;
+    if (m_fAltScopeInstalled)
+        m_fAltScopeFactor && !IsZoomed() ? idx = hud_item_measures::m_hands_offset_type_aim2 : idx = GetCurrentHudOffsetIdx();
+    else
+        idx = GetCurrentHudOffsetIdx();
 
+    bool b_aiming = idx != hud_item_measures::m_hands_offset_type_normal;
+
+    //============ Поворот ствола во время аима + скошенные прицелы ===========//
     Fvector zr_offs = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_pos][idx];
     Fvector zr_rot = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_rot][idx];
-    //============ Поворот ствола во время аима ===========//
-    if (b_aiming)
+    
+    if (m_fAltScopeInstalled)
     {
-        if (IsZoomed())
-            m_fZoomRotationFactor += Device.fTimeDelta / m_fZoomRotateTime;
-        else
-            m_fZoomRotationFactor -= Device.fTimeDelta / m_fZoomRotateTime;
+        if (b_aiming)
+        {
+            if (IsZoomed())
+            {
+                const float factor = Device.fTimeDelta / m_fZoomRotateTime;
+                if (m_fAltScopeActive)
+                {
+                    m_fAltScopeFactor += factor;
+                    m_fZoomRotationFactor -= factor;
+                }
+                else
+                {
+                    m_fZoomRotationFactor += factor;
+                    m_fAltScopeFactor -= factor;
+                }
+            }
+            else
+            {
+                // VlaGan: m_fZoomRotateTimeStart - тип бекапа m_fZoomRotateTime, сделал медленное прицеливание в зависимости
+                // от здоровья рук и уровня стамины
+                const float factorzoomout = Device.fTimeDelta / m_fZoomRotateTimeStart;
+                m_fZoomRotationFactor -= factorzoomout;
+                m_fAltScopeFactor -= factorzoomout;
+            }
 
-        clamp(m_fZoomRotationFactor, 0.f, 1.f);
+            clamp(m_fZoomRotationFactor, 0.f, 1.f);
+            clamp(m_fAltScopeFactor, 0.f, 1.f);
 
-        zr_offs.mul(m_fZoomRotationFactor);
-        zr_rot.mul(m_fZoomRotationFactor);
+            Fvector zr_offs1{};
+            Fvector zr_rot1{};
+            if (idx == hud_item_measures::m_hands_offset_type_aim && IsZoomed())
+            {
+                zr_offs1 = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_pos][hud_item_measures::m_hands_offset_type_aim2];
+                zr_rot1 = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_rot][hud_item_measures::m_hands_offset_type_aim2];
+            }
+            else if (idx == hud_item_measures::m_hands_offset_type_aim2 && IsZoomed())
+            {
+                zr_offs1 = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_pos][hud_item_measures::m_hands_offset_type_aim];
+                zr_rot1 = hi->m_measures.m_hands_offset[hud_item_measures::m_hands_offset_rot][hud_item_measures::m_hands_offset_type_aim];
+            }
 
-        summary_offset.add(zr_offs);
+            if (!m_fAltScopeActive)
+            {
+                // VlaGan: для плавного выхода если мы выходим из альтскопа
+                if (m_fAltScopeFactor && !IsZoomed())
+                {
+                    zr_offs.mul(m_fAltScopeFactor);
+                    zr_rot.mul(m_fAltScopeFactor);
+                }
+                else
+                {
+                    zr_offs.mul(m_fZoomRotationFactor);
+                    zr_rot.mul(m_fZoomRotationFactor);
+                }
+                zr_offs1.mul(m_fAltScopeFactor);
+                zr_rot1.mul(m_fAltScopeFactor);
+            }
+            else
+            {
+                zr_offs.mul(m_fAltScopeFactor);
+                zr_rot.mul(m_fAltScopeFactor);
+                zr_offs1.mul(m_fZoomRotationFactor);
+                zr_rot1.mul(m_fZoomRotationFactor);
+            }
+
+            Fmatrix hud_rotation;
+            hud_rotation.identity();
+            hud_rotation.rotateX(zr_rot1.x);
+
+            Fmatrix hud_rotation_y;
+            hud_rotation_y.identity();
+            hud_rotation_y.rotateY(zr_rot1.y);
+            hud_rotation_y.mulA_43(hud_rotation_y);
+
+            hud_rotation_y.identity();
+            hud_rotation_y.rotateZ(zr_rot1.z);
+            hud_rotation.mulA_43(hud_rotation_y);
+            hud_rotation.translate_over(zr_offs1);
+            trans.mulB_43(hud_rotation);
+
+            summary_offset.add(zr_offs);
+        }
     }
+    // У нас нет альтскопа
+    else
+    {
+        if (b_aiming)
+        {
+            if (IsZoomed())
+                m_fZoomRotationFactor += Device.fTimeDelta / m_fZoomRotateTime;
+            else
+                m_fZoomRotationFactor -= Device.fTimeDelta / m_fZoomRotateTimeStart;
 
+            clamp(m_fZoomRotationFactor, 0.f, 1.f);
+
+            zr_offs.mul(m_fZoomRotationFactor);
+            zr_rot.mul(m_fZoomRotationFactor);
+
+            summary_offset.add(zr_offs);
+        }
+    }
     //====================================================//
 
     auto pActor = smart_cast<const CActor*>(object().H_Parent());
@@ -1028,46 +1123,6 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
     }
     //====================================================//
    
-/*
-AIM2 :{
-        //if (!m_second_scope_enable && !is_second_scope && !IsZoomed())
-           // goto SAFEMODE;
-    if (UseOtherAltScopeButton)
-        goto SAFEMODE;
- 
-        Fvector sscope_offs = m_second_scope_offset[0];
-        Fvector sscope_rot = m_second_scope_offset[1];
-
-        const float fSsopeModePerUpd = Device.fTimeDelta / fSscopeMaxTime;
-        if (is_second_scope)
-        {
-            mfSscope_Factor += fSsopeModePerUpd;
-            clamp(mfSscope_Factor, 0.0f, 1.0f);
-
-        }
-        else
-        {
-            if (mfSscope_Factor < 0.0f)
-            {
-                mfSscope_Factor += fSsopeModePerUpd;
-                clamp(mfSscope_Factor, -1.0f, 0.0f);
-            }
-            else
-            {
-                mfSscope_Factor -= fSsopeModePerUpd;
-                clamp(mfSscope_Factor, 0.0f, 1.0f);
-            }
-        }
-        sscope_offs.mul(mfSscope_Factor);
-        sscope_rot.mul(-PI / 180.f);
-        sscope_rot.mul(mfSscope_Factor);
-
-        summary_offset.add(sscope_offs);
-        summary_rotate.add(sscope_rot);
-
-        goto SAFEMODE;
-    }
-    */
 SAFEMODE : {
         CActor* pAct = smart_cast<CActor*>(object().H_Parent());
         bool issafemode = pAct->GetSafemode();
@@ -1164,7 +1219,7 @@ LOOKOUT_EFFECT:
     //=============== Эффекты выглядываний ===============//
     {
         const bool bEnabled = m_lookout_offset[2][idx].x;
-        if (!bEnabled && !is_second_scope)
+        if (!bEnabled)
             goto JUMP_EFFECT;
 
         float fLookoutMaxTime = m_lookout_offset[2][idx].y; // Макс. время в секундах, за которое мы наклонимся из центрального положения

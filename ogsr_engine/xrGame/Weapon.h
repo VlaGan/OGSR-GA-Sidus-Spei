@@ -168,6 +168,8 @@ public:
     virtual bool TorchAttachable() const;
     virtual bool TactHandlerAttachable() const;
 
+    float GetZoomRotateFactor() { return m_fZoomRotateTime; }
+    void SetZoomRotateFactor(const float factor) { m_fZoomRotateTime = factor; }
 
     virtual bool UseScopeTexture();
 
@@ -206,14 +208,6 @@ public:
 
     u16 GetAddonsState() const { return m_flagsAddOnState; };
     void SetAddonsState(u16 st) { m_flagsAddOnState = st; }
-    void ChangeScopeVision()
-    {
-        if (!m_second_scope_enable)
-            return;
-
-        is_second_scope = true ? !is_second_scope : false;
-    }
-
 
     //названия секций подключаемых аддонов
     shared_str m_sScopeName;
@@ -248,7 +242,7 @@ public:
     shared_str m_sHud_wpn_torch_bone;
     shared_str m_sHud_wpn_tacthandler_bone;
 
-    bool t_handler{}, UseOtherAltScopeButton{};
+    bool t_handler{};
 
 private:
     xr_vector<shared_str> hidden_bones;
@@ -618,7 +612,7 @@ public:
     const float& hit_probability() const;
     void UpdateWeaponParams();
     void UpdateSecondVP();
-    float GetZRotatingFactor() const { return m_fZoomRotationFactor; } //--#SM+#--
+    float GetZRotatingFactor() const { return m_fZoomRotationFactor; }//m_fAltScopeActive ? m_fAltScopeFactor : m_fZoomRotationFactor;} //--#SM+#--
     float GetSecondVPFov() const; //--#SM+#--
     bool SecondVPEnabled() const;
     float GetHudFov() override;

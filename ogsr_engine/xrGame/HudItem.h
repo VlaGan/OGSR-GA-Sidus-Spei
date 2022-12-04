@@ -97,6 +97,9 @@ protected: //чтоб нельзя было вызвать на прямую
     u32 m_dwStateTime;
 
 public:
+
+    u8 last_idx{};
+
     virtual void Load(LPCSTR section);
     virtual CHudItem* cast_hud_item() { return this; }
 
@@ -184,8 +187,8 @@ public:
     virtual void render_item_3d_ui() {}
     virtual bool render_item_3d_ui_query() { return false; }
     virtual bool CheckCompatibility(CHudItem*) { return true; }
-
-    bool is_second_scope{}, m_second_scope_enable, UseOtherAltScopeButton;
+    // активен ли альтскоп      доступен ли альтскоп
+    bool m_fAltScopeActive{}, m_fAltScopeInstalled{};
     float fSscopeMaxTime{};
 
 protected:
@@ -292,8 +295,8 @@ protected:
     virtual Fvector GetPositionForCollision() { return Device.vCameraPosition; }
     virtual Fvector GetDirectionForCollision() { return Device.vCameraDirection; }
     float m_fZoomRotationFactor{}; //от 0 до 1, показывает насколько процентов мы перемещаем HUD
-    float m_fSecondScopeFactor{};
-    float m_fZoomRotateTime{}; //время приближения
+    float m_fAltScopeFactor{};
+    float m_fZoomRotateTime{}, m_fZoomRotateTimeStart{}; //время приближения
     u32 skip_updated_frame{};
     bool HudInertionAllowed() const { return m_huditem_flags.test(fl_inertion_allow); }
     void AllowHudInertion(BOOL B) { m_huditem_flags.set(fl_inertion_allow, B); }
