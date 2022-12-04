@@ -48,6 +48,11 @@ public:
     CUICarBodyWnd* UICarBodyMenu;
     CChangeLevelWnd* UIChangeLevelWnd;
 
+
+    inline CUIInventoryWnd* GetInvWND() { return InventoryMenu; }
+    inline game_cl_Single* GetmGame() { return m_game; }
+    //void ActivateInvWnd() { m_game->StartStopMenu(InventoryMenu, true); }
+    //IC CUIInventoryWnd* GetInventoryMenu() { return InventoryMenu; }
     void ShowHidePda(const bool show);
 };
 

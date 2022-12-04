@@ -98,7 +98,19 @@ bool CUIGameSP::IR_OnKeyboardPress(int dik)
             auto Pda = pActor->GetPDA();
             if (!Pda || !Pda->Is3DPDA() || !psActorFlags.test(AF_3D_PDA) || !PdaMenu->IsShown())
             {
-                m_game->StartStopMenu(InventoryMenu, true);
+                if (pActor->GetBagStatus())
+                    return false;
+
+                if (pActor->IsBagInSlot() && !(InventoryMenu->IsShown()))
+                    pActor->SetNeedBag();
+                else if (InventoryMenu->IsShown() && pActor->NeedToHideActiveBag() && pActor->IsBagInSlot())
+                {
+                    pActor->DeactivateBagSlot();
+                    m_game->StartStopMenu(InventoryMenu, true);
+                }
+                else
+                    m_game->StartStopMenu(InventoryMenu, true);
+
                 return true;
             }
         }
@@ -107,6 +119,10 @@ bool CUIGameSP::IR_OnKeyboardPress(int dik)
     case kACTIVE_JOBS:
     case kMAP:
     case kCONTACTS: {
+        // Перевірка наявності пда
+        // TODO: зробити відображення слота ПДА
+        if (!pActor->IsPdaInSlot())
+            return false;
         auto Pda = pActor->GetPDA();
         if ((!Pda || !Pda->Is3DPDA() || !psActorFlags.test(AF_3D_PDA)) && (!MainInputReceiver() || MainInputReceiver() == PdaMenu))
         {

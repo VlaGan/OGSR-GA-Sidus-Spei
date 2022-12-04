@@ -148,6 +148,12 @@ public:
     // максимальный вес инвентаря
     float m_fMaxWeight;
 
+    // анимированный рюкзак
+    bool m_fStartAnimBag{}, m_fStartBagAnim{}, m_fNeedToHideRuck{};
+    float m_fBagLockTime, m_fBagLockTimeFactor{};
+    u32 PreviousBagActiveSlot;
+    bool IsActiveInventoryWnd();
+    
 protected:
     void UpdateDropTasks();
     void UpdateDropItem(PIItem pIItem);

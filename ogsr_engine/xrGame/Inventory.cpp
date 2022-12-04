@@ -97,6 +97,7 @@ CInventory::CInventory()
     m_bSlotsUseful = true;
     m_bBeltUseful = false;
 
+    m_fBagLockTime = READ_IF_EXISTS(pSettings, r_float, "inventory", "ruck_locktime", 1.5f);
     m_fTotalWeight = -1.f;
     m_dwModifyFrame = 0;
     m_drop_last_frame = false;
@@ -286,7 +287,8 @@ bool CInventory::DropItem(CGameObject* pObj)
 bool CInventory::Slot(PIItem pIItem, bool bNotActivate)
 {
     VERIFY(pIItem);
-    //	Msg("To Slot %s[%d]", *pIItem->object().cName(), pIItem->object().ID());
+    if (smart_cast<CActor*>(m_pOwner))
+        Msg("To Slot %s[%d]", *pIItem->object().cName(), pIItem->object().ID());
 
     if (!CanPutInSlot(pIItem))
     {
@@ -300,7 +302,13 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate)
                 pIItem);
         */
         if (m_slots[pIItem->GetSlot()].m_pIItem == pIItem && !bNotActivate)
-            Activate(pIItem->GetSlot());
+            if (smart_cast<CActor*>(m_pOwner)){
+                if (!(IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT)))
+                    Activate(pIItem->GetSlot());
+            }
+            else
+                Activate(pIItem->GetSlot());
+
 
         return false;
     }
@@ -310,14 +318,20 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate)
     Тут необходимо проверять именно так, потому что
     GetSlot вернет новый слот, а не старый. Real Wolf.
     */
-    for (u32 i = 0; i < m_slots.size(); i++)
-        if (m_slots[i].m_pIItem == pIItem)
-        {
-            if (i == m_iActiveSlot)
-                Activate(NO_ACTIVE_SLOT);
-            m_slots[i].m_pIItem = NULL;
-            break;
-        }
+        for (u32 i = 0; i < m_slots.size(); i++)
+            if (m_slots[i].m_pIItem == pIItem)
+            {
+                if (i == m_iActiveSlot)
+                    if (smart_cast<CActor*>(m_pOwner))
+                    {
+                        if (!(IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT)))
+                            Activate(NO_ACTIVE_SLOT);
+                    }
+                    else
+                        Activate(NO_ACTIVE_SLOT);
+                m_slots[i].m_pIItem = NULL;
+                break;
+            }
 
     m_slots[pIItem->GetSlot()].m_pIItem = pIItem;
 
@@ -330,7 +344,13 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate)
         m_belt.erase(it);
 
     if ((m_iActiveSlot == pIItem->GetSlot() || (m_iActiveSlot == NO_ACTIVE_SLOT && m_iNextActiveSlot == NO_ACTIVE_SLOT)) && !bNotActivate)
-        Activate(pIItem->GetSlot());
+        if (smart_cast<CActor*>(m_pOwner))
+        {
+            if (!(IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT)))
+                Activate(pIItem->GetSlot());
+        }
+        else
+            Activate(pIItem->GetSlot());
 
     auto PrevPlace = pIItem->m_eItemPlace;
     pIItem->m_eItemPlace = eItemPlaceSlot;
@@ -579,8 +599,11 @@ bool CInventory::Action(s32 cmd, u32 flags)
         case kDROP:
 
         {
-            SendActionEvent(cmd, flags);
-            return true;
+            if (m_iActiveSlot != BAG_SLOT)
+            {
+                SendActionEvent(cmd, flags);
+                return true;
+            }
         }
         break;
 
@@ -609,7 +632,9 @@ bool CInventory::Action(s32 cmd, u32 flags)
     case kWPN_3:
     case kWPN_4:
     case kWPN_5:
-    case kWPN_6: {
+    case kWPN_6: { // при активному рюкзаку, ствол на кнопку не дістати
+        if ((IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT)) || GetActiveSlot() == BAG_SLOT)
+            return false;
         if (flags & CMD_START)
         {
             if (GetActiveSlot() == cmd - kWPN_1 && ActiveItem())
@@ -678,6 +703,35 @@ void CInventory::Update()
         m_iActiveSlot = m_iNextActiveSlot;
     }
     UpdateDropTasks();
+
+    if (smart_cast<CActor*>(m_pOwner))
+    {
+        //  Затичка на переміщення предмета в слот при відображенні рюкзака
+        if (IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT) && m_iActiveSlot != BAG_SLOT)
+            Activate(BAG_SLOT);
+
+        // Закриття рюкзака при виході на ESCAPE
+        if (!(IsActiveInventoryWnd()) && m_fNeedToHideRuck)
+        {
+            if (GetActiveSlot() == BAG_SLOT)
+            {
+                ItemFromSlot(PreviousBagActiveSlot) ? Activate(PreviousBagActiveSlot) : Activate(NO_ACTIVE_SLOT);
+                m_fNeedToHideRuck = false;
+            }
+        }
+
+        if (m_fStartAnimBag && m_fBagLockTime > m_fBagLockTimeFactor)
+            m_fBagLockTimeFactor += Device.fTimeDelta;
+        else if (m_fBagLockTimeFactor > m_fBagLockTime && m_fStartAnimBag)
+        {
+            auto pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
+            pGameSP->GetmGame()->StartStopMenu(pGameSP->GetInvWND(), true);
+            m_fBagLockTimeFactor = 0;
+            m_fStartAnimBag = false;
+            m_fStartBagAnim = false; // not used
+            m_fNeedToHideRuck = true;
+        }
+    }
 }
 
 void CInventory::UpdateDropTasks()
@@ -1311,4 +1365,9 @@ bool CInventory::IsActiveSlotBlocked() const
         if (slot.CanBeActivated())
             return false;
     return true;
+}
+
+// Перевірка чи активне вікно інвентаря 
+bool CInventory::IsActiveInventoryWnd(){
+    return smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame())->GetInvWND()->IsShown();
 }
