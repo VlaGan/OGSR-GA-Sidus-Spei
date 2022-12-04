@@ -185,6 +185,82 @@ static class cl_eye_D final : public R_constant_setup
     }
 } binder_eye_D;
 
+
+// interpolated eye position (crookr scope parallax)
+     // We can improve this by clamping the magnitude of the travel here instead of in-shader.
+     // it would fix the issue with the fog "sticking" when moving too far off center
+extern float scope_fog_interp;
+extern float scope_fog_travel;
+ class cl_eye_PL:public R_constant_setup 
+{
+     Fvector tV;
+     virtual void setup(R_constant* C) 
+    {
+        Fvector& V = RDEVICE.vCameraPosition;
+        tV = tV.lerp(tV, V, scope_fog_interp);
+        RCache.set_c(C, tV.x, tV.y, tV.z, 1);
+        
+    }
+};
+ static cl_eye_PL binder_eye_PL;
+
+ // interpolated eye direction (crookr scope parallax)
+     class cl_eye_DL:public R_constant_setup
+ {
+     Fvector tV;
+     virtual void setup(R_constant* C) 
+     {
+         Fvector& V = RDEVICE.vCameraDirection;
+         tV = tV.lerp(tV, V, scope_fog_interp);
+         RCache.set_c(C, tV.x, tV.y, tV.z, 0);
+         
+     }
+     
+ };
+static cl_eye_DL binder_eye_DL;
+
+ // fake scope params (crookr)
+     extern float scope_outerblur;
+ extern float scope_innerblur;
+extern float scope_scrollpower;
+ extern float scope_brightness;
+ class cl_fakescope_params:public R_constant_setup 
+{
+     virtual void setup(R_constant* C) 
+    {
+        RCache.set_c(C, scope_scrollpower, scope_innerblur, scope_outerblur, scope_brightness);
+        
+    }
+    
+};
+static cl_fakescope_params binder_fakescope_params;
+
+extern float scope_ca;
+extern float scope_fog_attack;
+extern float scope_fog_mattack;
+// extern float scope_fog_travel;
+class cl_fakescope_ca : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, scope_ca, scope_fog_attack, scope_fog_mattack, scope_fog_travel); }
+};
+static cl_fakescope_ca binder_fakescope_ca;
+
+ extern float scope_radius;
+ extern float scope_fog_radius;
+ extern float scope_fog_sharp;
+ // extern float scope_drift_amount;
+     class cl_fakescope_params3:public R_constant_setup 
+{
+    virtual void setup(R_constant* C)
+    {
+        RCache.set_c(C, scope_radius, scope_fog_radius, scope_fog_sharp, 0.0f);
+        
+    }
+   
+};
+static cl_fakescope_params3 binder_fakescope_params3;
+
+
 // eye-params
 static class cl_eye_N final : public R_constant_setup
 {
@@ -576,8 +652,15 @@ void CBlender_Compile::SetMapping()
 
     // eye-params
     r_Constant("eye_position", &binder_eye_P);
+    r_Constant("eye_position_lerp", &binder_eye_PL);
     r_Constant("eye_direction", &binder_eye_D);
+    r_Constant("eye_direction_lerp", &binder_eye_DL);
     r_Constant("eye_normal", &binder_eye_N);
+
+    // crookr
+    r_Constant("fakescope_params1", &binder_fakescope_params);
+    r_Constant("fakescope_params2", &binder_fakescope_ca);
+    r_Constant("fakescope_params3", &binder_fakescope_params3);
 
     // global-lighting (env params)
     r_Constant("L_sun_color", &binder_sun0_color);

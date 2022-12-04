@@ -7,6 +7,9 @@
 #define r2_RT_N "$user$normal" // MRT
 #define r2_RT_albedo "$user$albedo" // MRT
 
+#define r2_RT_scopert "$user$scopeRT"
+#define r2_RT_pp_bloom "$user$pp_bloom"
+
 // other
 #define r2_RT_accum "$user$accum" // ---	16 bit fp or 16 bit fx
 #define r2_RT_accum_temp "$user$accum_temp" // ---	16 bit fp - only for HW which doesn't feature fp16 blend

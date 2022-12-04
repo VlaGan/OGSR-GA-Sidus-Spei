@@ -322,6 +322,10 @@ void CRenderTarget::phase_combine()
     if (ps_r2_mask_control > 0)
         phase_gasmask_dudv();
 
+    if (scope_fake_enabled)
+        phase_fakescope(); // crookr
+        
+
     //if (ps_ssfx_wpn_dof_2 > 0)
       //  phase_dof();
 

@@ -232,6 +232,9 @@ float ps_current_detail_scale = 1.f;
 
 float ps_r2_gloss_factor = 4.0f;
 
+// crookr
+int scope_fake_enabled = 1;
+
 // textures
 int psTextureLOD = 0;
 
@@ -835,6 +838,8 @@ void xrRender_initconsole()
     CMD4(CCC_Vector4, "shader_param_6", &ps_dev_param_6, tw2_min1, tw2_max1);
     CMD4(CCC_Vector4, "shader_param_7", &ps_dev_param_7, tw2_min1, tw2_max1);
     CMD4(CCC_Vector4, "shader_param_8", &ps_dev_param_8, tw2_min1, tw2_max1);
+
+    CMD4(CCC_Integer, "r__fakescope", &scope_fake_enabled, 0, 1); // crookr for fake scope
 
     CMD4(CCC_Vector4, "ssfx_wpn_dof_1", &ps_ssfx_wpn_dof_1, tw2_min1, tw2_max1);
     CMD4(CCC_Float, "ssfx_wpn_dof_2", &ps_ssfx_wpn_dof_2, 0, 1);

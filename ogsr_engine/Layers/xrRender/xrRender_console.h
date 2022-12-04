@@ -50,6 +50,8 @@ extern ECORE_API Fvector4 ps_dev_param_6;
 extern ECORE_API Fvector4 ps_dev_param_7;
 extern ECORE_API Fvector4 ps_dev_param_8;
 
+extern ECORE_API int scope_fake_enabled;
+
 extern ECORE_API Fvector4 ps_ssfx_wpn_dof_1;
 extern ECORE_API float ps_ssfx_wpn_dof_2;
 

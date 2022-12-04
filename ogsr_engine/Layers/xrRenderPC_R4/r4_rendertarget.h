@@ -52,6 +52,8 @@ public:
     IBlender* b_gasmask_dudv;
     IBlender* b_dof;
 
+    IBlender* b_fakescope;
+
     // compute shader for hdao
     IBlender* b_hdao_cs;
     IBlender* b_hdao_msaa_cs;
@@ -93,6 +95,7 @@ public:
     ref_rt rt_LUM_64; // 64bit, 64x64,	log-average in all components
     ref_rt rt_LUM_8; // 64bit, 8x8,		log-average in all components
     ref_rt rt_dof;
+    ref_rt rt_fakescope;
     ref_rt rt_LUM_pool[CHWCaps::MAX_GPUS * 2]; // 1xfp32,1x1,		exp-result -> scaler
     ref_texture t_LUM_src; // source
     ref_texture t_LUM_dest; // destination & usage for current frame
@@ -207,6 +210,8 @@ private:
     ref_shader s_dof;
     ref_shader s_rain_drops;
 
+    ref_shader s_fakescope;
+
 public:
     ref_shader s_postprocess;
     ref_shader s_postprocess_msaa;
@@ -320,6 +325,7 @@ public:
     void PhaseRainDrops();
     void phase_gasmask_dudv();
     void phase_dof();
+    void phase_fakescope();
 
     virtual void set_blur(float f) { param_blur = f; }
     virtual void set_gray(float f) { param_gray = f; }

@@ -396,6 +396,7 @@ CRenderTarget::CRenderTarget()
     b_dof = xr_new<CBlender_dof>();
     
     b_gasmask_dudv = xr_new<CBlender_gasmask_dudv>();
+    b_fakescope = xr_new<CBlender_fakescope>();
 
 
 
@@ -441,6 +442,7 @@ CRenderTarget::CRenderTarget()
 
 
     s_gasmask_dudv.create(b_gasmask_dudv, "r3\\gasmask_dudv");
+    s_fakescope.create(b_fakescope, "r3\\fakescope");
     //s_dof.create(b_dof, "r3\\depth_on_field");
     //	NORMAL
     {
@@ -492,6 +494,7 @@ CRenderTarget::CRenderTarget()
         rt_Generic_1.create(r2_RT_generic1, w, h, D3DFMT_A8R8G8B8, 1);
 
         rt_dof.create(r2_RT_dof, w, h, D3DFMT_A8R8G8B8, 1);
+        rt_fakescope.create(r2_RT_scopert, w, h, D3DFMT_A8R8G8B8, 1);
 
         if (RImplementation.o.dx10_msaa)
             rt_Generic_0_temp.create(r2_RT_generic0_temp, w, h, D3DFMT_A8R8G8B8, SampleCount);
@@ -1170,6 +1173,7 @@ CRenderTarget::~CRenderTarget()
     xr_delete(b_ssao);
     xr_delete(b_gasmask_dudv);
     xr_delete(b_dof);
+    xr_delete(b_fakescope);
 
     if (RImplementation.o.dx10_msaa)
     {
@@ -1423,4 +1427,53 @@ void CRenderTarget::phase_dof()
 #if defined(USE_DX10) || defined(USE_DX11)
     HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
 #endif
+};
+
+
+void CRenderTarget::phase_fakescope() 
+{
+    // Constants
+    u32 Offset = 0;
+    u32 C = color_rgba(0, 0, 0, 255);
+    float d_Z = EPS_S;
+    float d_W = 1.0f;
+    float w = float(Device.dwWidth);
+    float h = float(Device.dwHeight);
+    Fvector2 p0, p1;
+    #if defined (USE_DX10) || defined(USE_DX11) 
+        p0.set(0.0f, 0.0f);
+        p1.set(1.0f, 1.0f);
+    #else
+        p0.set(0.5f / w, 0.5f / h);
+        p1.set((w + 0.5f) / w, (h + 0.5f) / h);
+    #endif 
+             //////////////////////////////////////////////////////////////////////////
+             // Set MSAA/NonMSAA rendertarget
+    #if defined (USE_DX10) ||defined(USE_DX11)  
+        ref_rt& dest_rt = RImplementation.o.dx10_msaa ? rt_Generic : rt_Color;
+        u_setrt(dest_rt, nullptr, nullptr, nullptr);
+    #else  
+        u_setrt(rt_Generic_0, nullptr, nullptr, nullptr);
+    #endif 
+    RCache.set_CullMode(CULL_NONE);
+    RCache.set_Stencil(FALSE);
+     // Fill vertex buffer
+    FVF::TL* pv = (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, Offset);
+    pv->set(0, float(h), d_Z, d_W, C, p0.x, p1.y);
+    pv++;
+    pv->set(0, 0, d_Z, d_W, C, p0.x, p0.y);
+    pv++;
+    pv->set(float(w), float(h), d_Z, d_W, C, p1.x, p1.y);
+    pv++;
+    pv->set(float(w), 0, d_Z, d_W, C, p1.x, p0.y);
+    pv++;
+    RCache.Vertex.Unlock(4, g_combine->vb_stride);
+    // Set pass
+    RCache.set_Element(s_fakescope->E[1]); /// E[ps_r2_nightvision]);
+     // Set geometry
+    RCache.set_Geometry(g_combine);
+    RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+    #if defined (USE_DX10) || defined(USE_DX11)
+        HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
+    #endif 
 };
