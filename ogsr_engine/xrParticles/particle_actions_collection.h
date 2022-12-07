@@ -242,12 +242,9 @@ struct PARTICLES_API PASource : public ParticleAction
 
 struct PARTICLES_API PATargetColor : public ParticleAction
 {
-
-    pVector color{}; // Color to shift towards
-    float alpha{}; // Alpha value to shift towards
-    float scale{}; // Amount to shift by (1 == all the way)
-    float timeFrom{0.f};
-    float timeTo{1.f};
+    pVector color; // Color to shift towards
+    float alpha; // Alpha value to shift towards
+    float scale; // Amount to shift by (1 == all the way)
 
     _METHODS;
 };
