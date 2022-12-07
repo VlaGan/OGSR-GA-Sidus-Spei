@@ -42,6 +42,7 @@ CWeaponMagazined::CWeaponMagazined(LPCSTR name, ESoundTypes eSoundType) : CWeapo
     m_eSoundEmptyClick = ESoundTypes(SOUND_TYPE_WEAPON_EMPTY_CLICKING | eSoundType);
     m_eSoundReload = ESoundTypes(SOUND_TYPE_WEAPON_RECHARGING | eSoundType);
 
+    m_sSndShotCurrent = nullptr;
     m_pSndShotCurrent = NULL;
     m_sSilencerFlameParticles = m_sSilencerSmokeParticles = NULL;
 
@@ -135,8 +136,22 @@ void CWeaponMagazined::Load(LPCSTR section)
     // Sounds
     HUD_SOUND::LoadSound(section, "snd_draw", sndShow, m_eSoundShow);
     HUD_SOUND::LoadSound(section, "snd_holster", sndHide, m_eSoundHide);
-    HUD_SOUND::LoadSound(section, "snd_shoot", sndShot, m_eSoundShot);
+    //HUD_SOUND::LoadSound(section, "snd_shoot", sndShot, m_eSoundShot);
     HUD_SOUND::LoadSound(section, "snd_empty", sndEmptyClick, m_eSoundEmptyClick);
+
+    	// Alundaio: LAYERED_SND_SHOOT
+    m_layered_sounds.LoadSound(section, "snd_shoot", "sndShot", false, m_eSoundShot);
+
+    if (pSettings->line_exist(section, "snd_shoot_actor"))
+        m_layered_sounds.LoadSound(section, "snd_shoot_actor", "sndShotActor", false, m_eSoundShot);
+    //-Alundaio
+
+    // misfire shot
+    /* if (pSettings->line_exist(section, "snd_shot_misfire"))
+        m_layered_sounds.LoadSound(section, "snd_shot_misfire", "sndShotMisfire", false, m_eSoundShot);
+    if (pSettings->line_exist(section, "snd_shot_misfire_actor"))
+        m_layered_sounds.LoadSound(section, "snd_shot_misfire_actor", "sndShotMisfireActor", false, m_eSoundShot);*/
+	
 
     if (pSettings->line_exist(section, "snd_reload_empty"))
         HUD_SOUND::LoadSound(section, "snd_reload_empty", sndReload, m_eSoundReload);
@@ -170,6 +185,7 @@ void CWeaponMagazined::Load(LPCSTR section)
 
 
     m_pSndShotCurrent = &sndShot;
+    m_sSndShotCurrent = "sndShot";
 
     //звуки и партиклы глушителя, еслит такой есть
     if (m_eSilencerStatus == ALife::eAddonAttachable)
@@ -178,7 +194,12 @@ void CWeaponMagazined::Load(LPCSTR section)
             m_sSilencerFlameParticles = pSettings->r_string(section, "silencer_flame_particles");
         if (pSettings->line_exist(section, "silencer_smoke_particles"))
             m_sSilencerSmokeParticles = pSettings->r_string(section, "silencer_smoke_particles");
-        HUD_SOUND::LoadSound(section, "snd_silncer_shot", sndSilencerShot, m_eSoundShot);
+        // Alundaio: LAYERED_SND_SHOOT Silencer
+        m_layered_sounds.LoadSound(section, "snd_silncer_shot", "sndSilencerShot", false, m_eSoundShot);
+        if (pSettings->line_exist(section, "snd_silncer_shot_actor"))
+            m_layered_sounds.LoadSound(section, "snd_silncer_shot_actor", "sndSilencerShotActor", false, m_eSoundShot);
+        //-Alundaio
+        //HUD_SOUND::LoadSound(section, "snd_silncer_shot", sndSilencerShot, m_eSoundShot);
     }
     //  [7/20/2005]
     if (pSettings->line_exist(section, "dispersion_start"))
@@ -788,6 +809,22 @@ void CWeaponMagazined::state_Fire(float dt)
 
 void CWeaponMagazined::SetDefaults() { CWeapon::SetDefaults(); }
 
+void CWeaponMagazined::PlaySoundShot()
+{
+    if (ParentIsActor())
+    {
+        string128 sndName;
+        strconcat(sizeof(sndName), sndName, m_sSndShotCurrent.c_str(), "Actor");
+        if (m_layered_sounds.FindSoundItem(sndName, false))
+        {
+            m_layered_sounds.PlaySound(sndName, get_LastFP(), H_Root(), !!GetHUDmode(), false, (u8)-1);
+            return;
+        }
+    }
+
+    m_layered_sounds.PlaySound(m_sSndShotCurrent.c_str(), get_LastFP(), H_Root(), !!GetHUDmode(), false, (u8)-1);
+}
+
 void CWeaponMagazined::OnShot()
 {
     // Если актор бежит - останавливаем его
@@ -795,8 +832,9 @@ void CWeaponMagazined::OnShot()
         Actor()->set_state_wishful(Actor()->get_state_wishful() & (~mcSprint));
 
     // Sound
-    PlaySound(*m_pSndShotCurrent, get_LastFP(), true);
-
+    //PlaySound(*m_pSndShotCurrent, get_LastFP(), true);
+    //m_layered_sounds.PlaySound(m_sSndShotCurrent.c_str(), get_LastFP(), H_Root(), !!GetHUDmode(), false, (u8)-1);
+    PlaySoundShot();
     // Camera
     AddShotEffector();
 
@@ -1006,7 +1044,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
             return true;
         }
     }
-    case kSAFEMODE: {
+    /* case kSAFEMODE : {
         if (flags & CMD_START)
         {
             if (!m_fAltScopeActive && !IsZoomed())
@@ -1020,7 +1058,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
                 return true;
         }
     }
-    break;
+    break;*/
     case kWPN_FIREMODE_NEXT: {
         if (flags & CMD_START)
         {
@@ -1460,6 +1498,7 @@ void CWeaponMagazined::InitAddons()
         m_sSmokeParticlesCurrent = m_sSilencerSmokeParticles;
         m_pSndShotCurrent = &sndSilencerShot;
 
+        m_sSndShotCurrent = "sndSilencerShot";
         //сила выстрела
         LoadFireParams(*cNameSect(), "");
 
@@ -1474,6 +1513,7 @@ void CWeaponMagazined::InitAddons()
         m_sSmokeParticlesCurrent = m_sSmokeParticles;
         m_pSndShotCurrent = &sndShot;
 
+        m_sSndShotCurrent = "sndShot"; 
         //сила выстрела
         LoadFireParams(*cNameSect(), "");
 
@@ -1670,8 +1710,8 @@ void CWeaponMagazined::OnZoomIn()
 
     if (GetState() == eIdle)
         PlayAnimIdle();
-
-    CActor* pActor = smart_cast<CActor*>(H_Parent());
+ 
+    auto pActor = smart_cast<CActor*>(H_Parent());
     pActor->SetSafemode(false);
     if (pActor)
     {

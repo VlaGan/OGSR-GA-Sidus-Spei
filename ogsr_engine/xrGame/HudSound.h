@@ -1,13 +1,14 @@
 //////////////////////////////////////////////////////////////////////
-// HudSound.h:		структура для работы со звуками применяемыми в
+// HudSound.h:		структура для работы со звуками применяемыми в 
 //					HUD-объектах (обычные звуки, но с доп. параметрами)
 //////////////////////////////////////////////////////////////////////
 
 #pragma once
 
+
 struct HUD_SOUND
 {
-    HUD_SOUND() { m_activeSnd = NULL; }
+    HUD_SOUND() : m_b_exclusive(false) { m_activeSnd = NULL; }
     ~HUD_SOUND() { m_activeSnd = NULL; }
 
     ////////////////////////////////////
@@ -49,6 +50,57 @@ struct HUD_SOUND
         float volume; //громкость
         float freq; //коэффициент частоты
     };
+    shared_str m_alias;
     SSnd* m_activeSnd;
+    bool m_b_exclusive;
     xr_vector<SSnd> sounds;
+
+    bool operator==(LPCSTR alias) const { return 0 == stricmp(m_alias.c_str(), alias); }
 };
+
+class HUD_SOUND_COLLECTION
+{
+    //xr_vector<HUD_SOUND> m_sound_items;
+
+public:
+    ~HUD_SOUND_COLLECTION();
+
+    HUD_SOUND_COLLECTION() : m_alias(nullptr) {};
+    shared_str m_alias; //Alundaio: For use when it's part of a layered Collection
+
+    xr_vector<HUD_SOUND> m_sound_items; //Alundaio: made public
+
+    HUD_SOUND* FindSoundItem(LPCSTR alias, bool b_assert); //AVO: made public to check if sound is loaded
+
+    void PlaySound(LPCSTR alias, const Fvector& position, const CObject* parent, bool hud_mode, bool looped = false,
+        u8 index = u8(-1));
+
+    void StopSound(LPCSTR alias);
+
+    void LoadSound(LPCSTR section, LPCSTR line, LPCSTR alias, bool exclusive = false, int type = sg_SourceType);
+
+    void SetPosition(LPCSTR alias, const Fvector& pos);
+    void StopAllSounds();
+};
+
+//Alundaio:
+class HUD_SOUND_COLLECTION_LAYERED
+{
+    xr_vector<HUD_SOUND_COLLECTION> m_sound_layered_items;
+
+public:
+    HUD_SOUND* FindSoundItem(pcstr alias, bool b_assert);
+
+    void PlaySound(pcstr alias, const Fvector& position, const CObject* parent,
+        bool hud_mode, bool looped = false, u8 index = u8(-1));
+
+    void StopSound(pcstr alias);
+    void StopAllSounds();
+
+    void LoadSound(pcstr section, pcstr line, pcstr alias, bool exclusive = false, int type = sg_SourceType);
+    void LoadSound(CInifile const* ini, pcstr section, pcstr line, pcstr alias,
+        bool exclusive = false, int type = sg_SourceType);
+
+    void SetPosition(pcstr alias, const Fvector& pos);
+};
+//-Alundaio

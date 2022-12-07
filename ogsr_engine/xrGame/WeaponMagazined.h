@@ -187,6 +187,8 @@ public:
     virtual void MakeBayonetHit();
 
     const bool IsBayonetActive() { return IsBayonetKick; }
+    HUD_SOUND& GetAimStartSnd() { return sndAimStart; }
+    HUD_SOUND& GetAimEndSnd() { return sndAimEnd; }
     
     // нельзя прикрепить фонарик и лцу, если нужна rail
     const bool GetRail()
@@ -241,6 +243,9 @@ protected:
 
     bool ScopeRespawn(PIItem);
 
- //public:
-   // void ChangeScopeVision();
+    // Alundaio: LAYERED_SND_SHOOT
+    HUD_SOUND_COLLECTION_LAYERED m_layered_sounds;
+    //-Alundaio
+    void PlaySoundShot();
+    shared_str m_sSndShotCurrent;
 };
