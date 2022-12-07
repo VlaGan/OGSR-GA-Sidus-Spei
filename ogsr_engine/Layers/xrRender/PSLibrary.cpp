@@ -31,55 +31,10 @@ void CPSLibrary::OnCreate()
     else
 #endif
     {
-        LoadAll();
-    }
-}
-
-void CPSLibrary::LoadAll() 
-{
-    FS_FileSet flist;
-    FS.file_list(flist, _game_data_, FS_ListFiles | FS_RootOnly, "*particles*.xr");
-    Msg("[%s] count of *particles*.xr files: [%u]", __FUNCTION__, flist.size());
-
-    //for (const auto& file : flist)
-    //{
-    //    string_path fn;
-    //    FS.update_path(fn, _game_data_, file.name.c_str());
-
-    //    if (!FS.exist(fn))
-    //    {
-    //        Msg("Can't find file: '%s'", fn);
-    //    }
-
-    //    if (!Load(fn))
-    //    {
-    //        Msg("CPSLibrary: Cannot load file: '%s'", fn);
-    //    }
-    //}
-
-    string_path fn;
-
-    FS.update_path(fn, _game_data_, "particles_cop.xr");
-    if (FS.exist(fn))
-    {
-        Msg("Load [%s]", fn);
-
+        string_path fn;
+        FS.update_path(fn, _game_data_, "particles.xr");
         Load(fn);
     }
-
-    FS.update_path(fn, _game_data_, "particles.xr");
-    if (FS.exist(fn))
-    {
-        Msg("Load [%s]", fn);
-
-        Load(fn);
-    }
-
-    std::sort(m_PEDs.begin(), m_PEDs.end(), ped_sort_pred);
-    std::sort(m_PGDs.begin(), m_PGDs.end(), pgd_sort_pred);
-
-    for (PS::PEDIt e_it = m_PEDs.begin(); e_it != m_PEDs.end(); e_it++)
-        (*e_it)->CreateShader();
 }
 
 void CPSLibrary::OnDestroy()
@@ -244,21 +199,20 @@ bool CPSLibrary::Load2()
     return true;
 }
 
-bool CPSLibrary::Load(LPCSTR nm)
+bool CPSLibrary::Load(const char* nm)
 {
+    if (!FS.exist(nm))
+    {
+        Msg("Can't find file: '%s'", nm);
+        return false;
+    }
+
     IReader* F = FS.r_open(nm);
+    bool bRes = true;
     R_ASSERT(F->find_chunk(PS_CHUNK_VERSION));
     u16 ver = F->r_u16();
     if (ver != PS_VERSION)
         return false;
-
-    bool bRes = true;
-
-    bool copFileFormat = strstr(nm, "_cop");
-
-    if (copFileFormat)
-        Msg("cop format used for file [%s]", nm);
-
     // second generation
     IReader* OBJ;
     OBJ = F->open_chunk(PS_CHUNK_SECONDGEN);
@@ -269,37 +223,7 @@ bool CPSLibrary::Load(LPCSTR nm)
         {
             PS::CPEDef* def = xr_new<PS::CPEDef>();
             if (def->Load(*O))
-            {
-                def->m_copFormat = copFileFormat;
-
-                //PS::PEDIt it = FindPEDIt(def->Name());
-                //if (it != m_PEDs.end())
-                //{
-                //    Msg("CPSLibrary: Duplicate ParticleEffect: %s. Last declared will be used.", def->Name());
-                //    xr_delete(*it);
-                //    m_PEDs.erase(it);
-                //}
-
-                bool found = false;
-
-                for (PS::PEDIt it = m_PEDs.begin(); it != m_PEDs.end(); it++)
-                {
-                    if (0 == xr_strcmp((*it)->Name(), def->Name()))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (found)
-                {
-                    xr_delete(def);
-                }
-                else
-                {
-                    m_PEDs.push_back(def);
-                }
-            }
+                m_PEDs.push_back(def);
             else
             {
                 bRes = false;
@@ -321,35 +245,7 @@ bool CPSLibrary::Load(LPCSTR nm)
         {
             PS::CPGDef* def = xr_new<PS::CPGDef>();
             if (def->Load(*O))
-            {
-                //PS::PGDIt it = FindPGDIt(def->m_Name.c_str());
-                //if (it != m_PGDs.end())
-                //{
-                //    Msg("CPSLibrary: Duplicate ParticleGroup: %s. Last declared will be used.", def->m_Name.c_str());
-                //    xr_delete(*it);
-                //    m_PGDs.erase(it);
-                //}
-
-                bool found = false;
-
-                for (PS::PGDIt it = m_PGDs.begin(); it != m_PGDs.end(); it++)
-                {
-                    if (0 == xr_strcmp((*it)->m_Name, def->m_Name))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (found)
-                {
-                    xr_delete(def);
-                }
-                else
-                {
-                    m_PGDs.push_back(def);
-                }
-            }
+                m_PGDs.push_back(def);
             else
             {
                 bRes = false;
@@ -365,6 +261,12 @@ bool CPSLibrary::Load(LPCSTR nm)
 
     // final
     FS.r_close(F);
+
+    std::sort(m_PEDs.begin(), m_PEDs.end(), ped_sort_pred);
+    std::sort(m_PGDs.begin(), m_PGDs.end(), pgd_sort_pred);
+
+    for (PS::PEDIt e_it = m_PEDs.begin(); e_it != m_PEDs.end(); e_it++)
+        (*e_it)->CreateShader();
 
     return bRes;
 }

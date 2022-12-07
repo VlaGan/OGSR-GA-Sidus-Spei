@@ -12,7 +12,6 @@ struct PARTICLES_API ParticleAction
     {
         ALLOW_ROTATE = (1 << 1)
     };
-    bool m_copFormat{};
     Flags32 m_Flags;
     PActionEnum type{}; // Type field
     ParticleAction() { m_Flags.zero(); }

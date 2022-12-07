@@ -2,7 +2,6 @@
 
 #include "ParticleEffect.h"
 #include <xmmintrin.h>
-//#include <Color.Dlg>
 
 using namespace PAPI;
 using namespace PS;
@@ -194,11 +193,9 @@ BOOL CParticleEffect::Compile(CPEDef* def)
 
         // append actions
         IReader F(m_Def->m_Actions.pointer(), m_Def->m_Actions.size());
-
-        ParticleManager()->LoadActions(m_HandleActionList, F, m_Def->m_copFormat);
+        ParticleManager()->LoadActions(m_HandleActionList, F);
         ParticleManager()->SetMaxParticles(m_HandleEffect, m_Def->m_MaxParticles);
         ParticleManager()->SetCallback(m_HandleEffect, OnEffectParticleBirth, OnEffectParticleDead, this, 0);
-
         // time limit
         if (m_Def->m_Flags.is(CPEDef::dfTimeLimit))
             m_fElapsedLimit = m_Def->m_fTimeLimit;

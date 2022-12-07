@@ -28,14 +28,11 @@ public:
 #endif
 
 public:
-
-    void LoadAll();
-
     bool Load(LPCSTR nm);
-    //bool Save(LPCSTR nm);
+    bool Save(LPCSTR nm);
 
     bool Load2();
-    //bool Save2();
+    bool Save2();
 
 public:
     CPSLibrary() { ; }

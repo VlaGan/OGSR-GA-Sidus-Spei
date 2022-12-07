@@ -188,26 +188,12 @@ CModelPool::CModelPool()
     bForceDiscard = FALSE;
     bAllowChildrenDuplicate = TRUE;
     g_pMotionsContainer = xr_new<motions_container>();
-
-    if (pSettings->section_exist("omf_override") && pSettings->line_exist("omf_override", "file"))
-    {
-        string_path fname;
-        FS.update_path(fname, "$game_config$", pSettings->r_string("omf_override", "file"));
-
-        if (FS.exist(fname))
-        {
-            omf_override_ini = xr_new<CInifile>(fname);
-        }
-    }
 }
 
 CModelPool::~CModelPool()
 {
     Destroy();
     xr_delete(g_pMotionsContainer);
-
-    if (omf_override_ini)
-        xr_delete(omf_override_ini);
 }
 
 dxRender_Visual* CModelPool::Instance_Find(LPCSTR N)

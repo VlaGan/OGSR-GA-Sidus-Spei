@@ -1434,12 +1434,12 @@ void PATargetColor::Execute(ParticleEffect* effect, float dt)
     {
         Particle& m = effect->particles[i];
 
-		if (m.age < timeFrom /* * tm_max */ || m.age > timeTo /* * tm_max */) continue;
+        c_p.set(m.color);
+        c_t.set(c_p.r + (color.x - c_p.r) * scaleFac, c_p.g + (color.y - c_p.g) * scaleFac, c_p.b + (color.z - c_p.b) * scaleFac, c_p.a + (alpha - c_p.a) * scaleFac);
+        m.color = c_t.get();
 
-		c_p.set(m.color);
-		c_t.set(c_p.r + (color.x - c_p.r) * scaleFac, c_p.g + (color.y - c_p.g) * scaleFac,
-		        c_p.b + (color.z - c_p.b) * scaleFac, c_p.a + (alpha - c_p.a) * scaleFac);
-		m.color = c_t.get();
+        //		m.color += (color - m.color) * scaleFac;
+        //		m.alpha += (alpha - m.alpha) * scaleFac;
     }
 }
 void PATargetColor::Transform(const Fmatrix&) { ; }

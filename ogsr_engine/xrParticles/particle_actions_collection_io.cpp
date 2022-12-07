@@ -376,26 +376,13 @@ void PATargetColor::Load(IReader& F)
     F.r_fvector3(color);
     alpha = F.r_float();
     scale = F.r_float();
-
-    if (m_copFormat)
-    {
-        timeFrom = F.r_float();
-        timeTo = F.r_float();
-    }
 }
-
 void PATargetColor::Save(IWriter& F)
 {
-	ParticleAction::Save(F);
-	F.w_fvector3(color);
-	F.w_float(alpha);
-	F.w_float(scale);
-
-    if (m_copFormat)
-    {
-        F.w_float(timeFrom);
-        F.w_float(timeTo);
-    }
+    ParticleAction::Save(F);
+    F.w_fvector3(color);
+    F.w_float(alpha);
+    F.w_float(scale);
 }
 
 void PATargetSize::Load(IReader& F)
