@@ -234,6 +234,7 @@ float ps_r2_gloss_factor = 4.0f;
 
 // crookr
 int scope_fake_enabled = 1;
+bool IsAltScope = false;
 
 // textures
 int psTextureLOD = 0;

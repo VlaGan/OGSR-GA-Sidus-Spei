@@ -1432,7 +1432,10 @@ void CRenderTarget::phase_dof()
 
 void CRenderTarget::phase_fakescope() 
 {
-    // Constants
+
+    if (Device.m_SecondViewport.IsSVPFrame() || IsAltScope)
+        return;
+
     u32 Offset = 0;
     u32 C = color_rgba(0, 0, 0, 255);
     float d_Z = EPS_S;
