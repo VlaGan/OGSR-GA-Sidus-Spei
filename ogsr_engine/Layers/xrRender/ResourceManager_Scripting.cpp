@@ -226,6 +226,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "../../xr_3da/ai_script_space.h"
+#include <format>
 
 lua_State* LSVM = nullptr;
 constexpr const char* GlobalNamespace = "_G";

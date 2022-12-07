@@ -89,8 +89,7 @@ BOOL CPGDef::Load(IReader& F)
 }
 
 BOOL CPGDef::Load2(CInifile& ini)
-{
-    //.	u16 version						= ini.r_u16("_group", "version");
+{    
     m_Flags.assign(ini.r_u32("_group", "flags"));
 
     m_Effects.resize(ini.r_u32("_group", "effects_count"));
@@ -229,7 +228,9 @@ void CParticleGroup::SItem::StopRelatedChild(u32 idx)
 void CParticleGroup::SItem::StartFreeChild(CParticleEffect* emitter, LPCSTR nm, PAPI::Particle& m)
 {
     CParticleEffect* C = static_cast<CParticleEffect*>(RImplementation.model_CreatePE(nm));
+
     C->SetHudMode(emitter->GetHudMode());
+
     if (!C->IsLooped())
     {
         Fmatrix M;

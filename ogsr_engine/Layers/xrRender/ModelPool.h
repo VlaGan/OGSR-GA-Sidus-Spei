@@ -81,5 +81,7 @@ public:
     void Render(dxRender_Visual* m_pVisual, const Fmatrix& mTransform, int priority, bool strictB2F, float m_fLOD);
     void RenderSingle(dxRender_Visual* m_pVisual, const Fmatrix& mTransform, float m_fLOD);
 #endif
+
+    CInifile* omf_override_ini = nullptr;
 };
 #endif // ModelPoolH
