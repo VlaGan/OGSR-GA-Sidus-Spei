@@ -1,4 +1,4 @@
-// Weapon.cpp: implementation of the CWeapon class.
+﻿// Weapon.cpp: implementation of the CWeapon class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
@@ -1197,7 +1197,7 @@ void CWeapon::renderable_Render()
     RenderLight();
 
     //если мы в режиме снайперки, то сам HUD рисовать не надо
-    if (IsZoomed() && !IsRotatingToZoom() && ZoomTexture())
+    if (IsZoomed() && !IsRotatingToZoom() && UseScopeTexture())
         RenderHud(FALSE);
     else
         RenderHud(TRUE);

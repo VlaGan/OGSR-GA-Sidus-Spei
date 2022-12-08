@@ -2020,6 +2020,7 @@ void CActor::DeactivateBagSlot()
 bool CActor::NeedToHideActiveBag() { return inventory().m_fNeedToHideRuck; }
 void CActor::SetNeedBag()
 {
+    inventory().Activate(BAG_SLOT);
     inventory().m_fStartAnimBag = true;
     inventory().PreviousBagActiveSlot = inventory().ItemFromSlot(inventory().GetActiveSlot()) ? inventory().GetActiveSlot() : NO_ACTIVE_SLOT;
     SetActorCrouch(true);

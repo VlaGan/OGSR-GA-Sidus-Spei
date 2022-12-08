@@ -1,5 +1,4 @@
 #include "stdafx.h"
-
 #include "xrXMLParser.h"
 
 CXml::CXml() : m_root(NULL), m_pLocalRoot(NULL) {}
@@ -22,25 +21,61 @@ void ParseFile(LPCSTR path, CMemoryWriter& W, IReader* F, CXml* xml)
             if (_GetItem(str.c_str(), 1, inc_name, '"'))
             {
                 IReader* I = NULL;
-                if (inc_name == strstr(inc_name, "ui\\"))
-                {
-                    shared_str fn = xml->correct_file_name("ui", strchr(inc_name, '\\') + 1);
-                    string_path buff;
-                    strconcat(sizeof(buff), buff, "ui\\", fn.c_str());
-                    I = FS.r_open(path, buff);
-                }
 
-                if (!I)
-                    I = FS.r_open(path, inc_name);
-
-                if (!I)
+                if (strstr(inc_name, "*.xml"))
                 {
-                    string1024 str;
-                    sprintf(str, "XML file[%s] parsing failed. Can't find include file:[%s]", path, inc_name);
-                    R_ASSERT2(false, str);
+                    FS_FileSet fset;
+                    FS.file_list(fset, path, FS_ListFiles, inc_name);
+
+                    for (FS_FileSet::iterator it = fset.begin(); it != fset.end(); it++)
+                    {
+                        LPCSTR file_name = it->name.c_str();
+
+                        if (file_name == strstr(file_name, "ui\\"))
+                        {
+                            shared_str fn = xml->correct_file_name("ui", strchr(file_name, '\\') + 1);
+                            string_path buff;
+                            strconcat(sizeof(buff), buff, "ui\\", fn.c_str());
+                            I = FS.r_open(path, buff);
+                        }
+
+                        if (!I)
+                            I = FS.r_open(path, file_name);
+
+                        if (!I)
+                        {
+                            string1024 str;
+                            xr_sprintf(str, "XML file[%s] parsing failed. Can't find include file:[%s]", path, file_name);
+                            R_ASSERT2(false, str);
+                        }
+
+                        ParseFile(path, W, I, xml);
+                        FS.r_close(I);
+                    }
                 }
-                ParseFile(path, W, I, xml);
-                FS.r_close(I);
+                else 
+                {
+                    if (inc_name == strstr(inc_name, "ui\\"))
+                    {
+                        shared_str fn = xml->correct_file_name("ui", strchr(inc_name, '\\') + 1);
+                        string_path buff;
+                        strconcat(sizeof(buff), buff, "ui\\", fn.c_str());
+                        I = FS.r_open(path, buff);
+                    }
+
+                    if (!I)
+                        I = FS.r_open(path, inc_name);
+
+                    if (!I)
+                    {
+                        string1024 str;
+                        sprintf(str, "XML file[%s] parsing failed. Can't find include file:[%s]", path, inc_name);
+                        R_ASSERT2(false, str);
+                    }
+
+                    ParseFile(path, W, I, xml);
+                    FS.r_close(I);
+                }                
             }
         }
         else

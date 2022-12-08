@@ -86,6 +86,7 @@ void CTorch::Load(LPCSTR section)
         HUD_SOUND::LoadSound(section, "snd_night_vision_idle", m_NightVisionIdleSnd, SOUND_TYPE_ITEM_USING);
         HUD_SOUND::LoadSound(section, "snd_night_vision_broken", m_NightVisionBrokenSnd, SOUND_TYPE_ITEM_USING);
     }
+    m_fTorchDischargeSpeed = pSettings->r_float(section, "discharge_speed");
 }
 
 void CTorch::SwitchNightVision()
@@ -318,8 +319,11 @@ void CTorch::UpdateCL()
 
     UpdateSwitchNightVision();
 
-    if (!m_switched_on)
+    if (!m_switched_on || !m_fCondition)
         return;
+
+    m_fCondition -= m_fTorchDischargeSpeed;
+    clamp(m_fCondition, 0.f, 1.f);
 
     if (useVolumetric)
     {

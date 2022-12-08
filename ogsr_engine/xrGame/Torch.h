@@ -76,6 +76,8 @@ protected:
     };
 
 public:
+    float m_fTorchDischargeSpeed{};
+
     virtual bool use_parent_ai_locations() const { return (!H_Parent()); }
     virtual void create_physic_shell();
     virtual void activate_physic_shell();
