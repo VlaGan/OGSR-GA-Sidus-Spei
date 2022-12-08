@@ -98,7 +98,16 @@ void CScriptGameObject::script_register(lua_State* L)
                     value("on_inv_box_item_take", int(GameObject::eOnInvBoxItemTake)), value("on_inv_box_item_drop", int(GameObject::eOnInvBoxItemDrop)),
                     value("on_inv_box_open", int(GameObject::eOnInvBoxOpen)),
 
-                    value("select_pda_contact", int(GameObject::eSelectPdaContact))],
+                    value("select_pda_contact", int(GameObject::eSelectPdaContact)),
+
+
+                    value("on_actor_zoom_in", int(GameObject::eOnActorWeaponZoomIn)), 
+                    value("on_actor_zoom_out", int(GameObject::eOnActorWeaponZoomOut)), 
+                     value("on_actor_fire_start", int(GameObject::eOnActorWeaponFireStart)), 
+                value("on_actor_fire_end", int(GameObject::eOnActorWeaponFireEnd)), 
+                value("on_actor_fire", int(GameObject::eOnActorWeaponFire))
+                   
+                   ],
 
            def("buy_condition", (void (*)(CScriptIniFile*, LPCSTR))(&::buy_condition)), def("buy_condition", (void (*)(float, float))(&::buy_condition)),
            def("sell_condition", (void (*)(CScriptIniFile*, LPCSTR))(&::sell_condition)), def("sell_condition", (void (*)(float, float))(&::sell_condition)),

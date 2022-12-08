@@ -28,6 +28,7 @@
 typedef xr_map<shared_str, int> STORY_PAIRS;
 extern STORY_PAIRS story_ids;
 extern STORY_PAIRS spawn_story_ids;
+extern CUIXml* g_wpnScopeXml;
 
 extern void dump_list_wnd();
 extern void dump_list_lines();
@@ -117,6 +118,7 @@ void clean_game_globals()
     clean_wnd_rects();
     xr_delete(g_gameTaskXml);
     xr_delete(g_uiSpotXml);
+    xr_delete(g_wpnScopeXml);
     dump_list_xmls();
     DestroyUIGeom();
 }

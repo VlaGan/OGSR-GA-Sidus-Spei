@@ -478,6 +478,8 @@ void CShootingObject::FireBullet(const Fvector& pos, const Fvector& shot_dir, fl
     float l_fHitPower;
     if (ParentIsActor()) //если из оружия стреляет актёр(игрок)
     {
+        if (auto wpn = smart_cast<CGameObject*>(this))
+        Actor()->callback(GameObject::eOnActorWeaponFire)(wpn->lua_game_object());
         l_fHitPower = fvHitPower[g_SingleGameDifficulty];
     }
     else
@@ -488,8 +490,18 @@ void CShootingObject::FireBullet(const Fvector& pos, const Fvector& shot_dir, fl
     Level().BulletManager().AddBullet(pos, dir, m_fStartBulletSpeed, l_fHitPower, fHitImpulse, parent_id, weapon_id, m_eHitType, fireDistance, cartridge, send_hit, aim_bullet);
 }
 
-void CShootingObject::FireStart() { bWorking = true; }
-void CShootingObject::FireEnd() { bWorking = false; }
+void CShootingObject::FireStart() { 
+    auto wpn = smart_cast<CGameObject*>(this);
+    if (wpn && ParentIsActor())
+        Actor()->callback(GameObject::eOnActorWeaponFireStart)(wpn->lua_game_object());
+    bWorking = true; }
+void CShootingObject::FireEnd()
+{
+    auto wpn = smart_cast<CGameObject*>(this);
+    if (wpn&&ParentIsActor())
+        Actor()->callback(GameObject::eOnActorWeaponFireEnd)(wpn->lua_game_object());
+    bWorking = false;
+}
 
 void CShootingObject::StartShotParticles()
 {

@@ -2,6 +2,8 @@
 
 #include "ParticleEffect.h"
 #include <xmmintrin.h>
+//#include "../../xrParticles/particle_manager.cpp"
+//#include "../../COMMON_AI/xrServer_Object_Base.h"
 //#include <Color.Dlg>
 
 using namespace PAPI;

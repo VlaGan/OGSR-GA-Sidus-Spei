@@ -704,7 +704,7 @@ void CInventory::Update()
     }
     UpdateDropTasks();
 
-    if (smart_cast<CActor*>(m_pOwner))
+    if (auto pAct = smart_cast<CActor*>(m_pOwner))
     {
         //  Затичка на переміщення предмета в слот при відображенні рюкзака
         if (IsActiveInventoryWnd() && ItemFromSlot(BAG_SLOT) && m_iActiveSlot != BAG_SLOT)
@@ -717,6 +717,7 @@ void CInventory::Update()
             {
                 ItemFromSlot(PreviousBagActiveSlot) ? Activate(PreviousBagActiveSlot) : Activate(NO_ACTIVE_SLOT);
                 m_fNeedToHideRuck = false;
+                pAct->SetActorCrouch(false);
             }
         }
 

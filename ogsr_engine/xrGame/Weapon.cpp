@@ -34,6 +34,10 @@
 extern ENGINE_API Fvector4 w_states;
 extern ENGINE_API Fvector3 w_timers;
 
+
+extern float scope_radius;
+extern int scope_2dtexactive;
+extern bool IsAltScope;
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -236,6 +240,9 @@ void CWeapon::Load(LPCSTR section)
 
     if (!m_bForcedParticlesHudMode)
         m_bParticlesHudMode = !!pSettings->line_exist(hud_sect, "item_visual");
+
+
+    SectionName = static_cast<shared_str>(section);
 
 #ifdef DEBUG
     {
@@ -1198,8 +1205,8 @@ void CWeapon::renderable_Render()
     inherited::renderable_Render();
 }
 
-bool CWeapon::need_renderable() { return !Device.m_SecondViewport.IsSVPFrame() && !(IsZoomed() && ZoomTexture() && !IsRotatingToZoom()); }
-
+//bool CWeapon::need_renderable() { return !Device.m_SecondViewport.IsSVPFrame() && !(IsZoomed() && ZoomTexture() && !IsRotatingToZoom()); }
+bool CWeapon::need_renderable() { return !Device.m_SecondViewport.IsSVPFrame() && !(IsZoomed() && UseScopeTexture() && !IsRotatingToZoom()); }
 void CWeapon::signal_HideComplete()
 {
     if (H_Parent())
@@ -1224,7 +1231,6 @@ void CWeapon::UpdatePosition(const Fmatrix& trans)
     VERIFY(!fis_zero(DET(renderable.xform)));
 }
 
-extern bool IsAltScope;
 bool CWeapon::Action(s32 cmd, u32 flags)
 {
     if (inherited::Action(cmd, flags))
@@ -1291,8 +1297,8 @@ bool CWeapon::Action(s32 cmd, u32 flags)
         {
             if (flags & CMD_START && !IsPending())
             {
-                if (auto pAct = smart_cast<CActor*>(H_Parent()))
-                    SetZoomRotateFactor(m_fZoomRotateTimeStart + pAct->GetZoomParam(m_fZoomRotateTimeStart));
+                //if (auto pAct = smart_cast<CActor*>(H_Parent()))
+                //    SetZoomRotateFactor(m_fZoomRotateTimeStart + pAct->GetZoomParam(m_fZoomRotateTimeStart));
 
                 if (psActorFlags.is(AF_WPN_AIM_TOGGLE) && IsZoomed())
                 {
@@ -1344,7 +1350,19 @@ bool CWeapon::Action(s32 cmd, u32 flags)
         return false;
     }
 
+    case kSAFEMODE: {
+        if (flags & CMD_START && !IsPending())
+        {
+            if (!m_fAltScopeActive && !IsZoomed())
+            {
+                CActor* pAct = smart_cast<CActor*>(H_Parent());
+                pAct->GetSafemode() ? pAct->SetSafemode(false) : pAct->SetSafemode(true);
 
+            }
+            return true;
+        }
+        return false;
+    }
 
     }
 
@@ -1956,11 +1974,24 @@ void CWeapon::OnZoomIn()
 {
     m_bZoomMode = true;
 
+
+    //TODO::фекскоп
+  /// bool IsScope;
+   // if ()
+     //   ALife::EWeaponAddonStatus
+    shared_str fakescop_dir = m_eScopeStatus == ALife::eAddonAttachable ? GetScopeName(): SectionName;
+    if (!SecondVPEnabled() && IsScopeAttached())
+        if (READ_IF_EXISTS(pSettings, r_string, fakescop_dir, "scope_texture", "") != "")
+            scope_radius = READ_IF_EXISTS(pSettings, r_float, fakescop_dir, "fakescope_radius", 0.f);
+        else
+            scope_radius = 0.f;
+
+        
     // если в режиме ПГ - не будем давать включать динамический зум
     if (m_bScopeDynamicZoom && !IsGrenadeMode() && !SecondVPEnabled())
         m_fZoomFactor = m_fRTZoomFactor;
     else if (m_fAltScopeActive)
-        m_fZoomFactor = m_fRTZoomFactor;
+        m_fZoomFactor = m_fIronSightZoomFactor;
     else
         m_fZoomFactor = CurrentZoomFactor();
 
@@ -1982,10 +2013,9 @@ void CWeapon::OnZoomIn()
 
 void CWeapon::OnZoomOut()
 {
-    m_fAltScopeActive = false;
-    IsAltScope = false;
+    m_fAltScopeActive = IsAltScope = false;
+    scope_radius = 0.f;
     m_fZoomFactor = Core.Features.test(xrCore::Feature::ogse_wpn_zoom_system) ? 1.f : g_fov;
-
     if (m_bZoomMode)
     {
         SprintType = false;
@@ -2013,7 +2043,7 @@ bool CWeapon::UseScopeTexture()
     return !SecondVPEnabled() && m_UIScope; // только если есть текстура прицела - для простого создания коллиматоров
 }
 
-CUIStaticItem* CWeapon::ZoomTexture()
+CUIWindow* CWeapon::ZoomTexture()
 {
     if (UseScopeTexture() && !m_fAltScopeActive)
         return m_UIScope;
@@ -2270,7 +2300,7 @@ void CWeapon::modify_holder_params(float& range, float& fov) const
 
 void CWeapon::OnDrawUI()
 {
-    if (IsZoomed() && ZoomHideCrosshair())
+    /* if (IsZoomed() && ZoomHideCrosshair())
     {
         if (ZoomTexture() && !IsRotatingToZoom())
         {
@@ -2279,6 +2309,14 @@ void CWeapon::OnDrawUI()
             ZoomTexture()->Render();
 
             //			m_UILens.Draw();
+        }
+    }*/
+    if (IsZoomed() && ZoomHideCrosshair())
+    {
+        if (UseScopeTexture() && !IsRotatingToZoom())
+        {
+            m_UIScope->Update();
+            m_UIScope->Draw();
         }
     }
 }
@@ -2378,7 +2416,8 @@ void CWeapon::Show(bool now)
 
 bool CWeapon::show_crosshair() { return psActorFlags.test(AF_CROSSHAIR_DBG) || !(IsZoomed() && ZoomHideCrosshair()); }
 
-bool CWeapon::show_indicators() { return !(IsZoomed() && (ZoomTexture() || !m_bScopeShowIndicators)); }
+//bool CWeapon::show_indicators() { return !(IsZoomed() && (ZoomTexture() || !m_bScopeShowIndicators)); }
+bool CWeapon::show_indicators() { return !(IsZoomed() && (UseScopeTexture() || !m_bScopeShowIndicators)); }
 
 float CWeapon::GetConditionToShow() const
 {

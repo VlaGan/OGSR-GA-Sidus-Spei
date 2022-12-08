@@ -285,7 +285,7 @@ protected:
     //текущий фактор приближения
     float m_fZoomFactor;
     //текстура для снайперского прицела, в режиме приближения
-    CUIStaticItem* m_UIScope;
+    CUIWindow* m_UIScope;
     //коэффициент увеличения прицеливания
     float m_fIronSightZoomFactor;
     //коэффициент увеличения прицела
@@ -324,7 +324,7 @@ public:
     virtual void OnZoomIn();
     virtual void OnZoomOut();
     bool IsZoomed() const override { return m_bZoomMode; }
-    CUIStaticItem* ZoomTexture();
+    CUIWindow* ZoomTexture();
     bool ZoomHideCrosshair()
     {
         auto* pA = smart_cast<CActor*>(H_Parent());
@@ -731,5 +731,5 @@ public:
 /* public:
     bool standart_scope{true};
     void ChangeScopeVision();*/
-
+    shared_str SectionName;
 };

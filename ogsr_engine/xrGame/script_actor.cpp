@@ -179,6 +179,24 @@ void CScriptActor::script_register(lua_State* L)
                .def_readwrite("disp_crouch_factor", &CActor::m_fDispCrouchFactor)
                .def_readwrite("disp_crouch_no_acc_factor", &CActor::m_fDispCrouchNoAccelFactor)
 
+                .def_readwrite("head_health", &CActor::m_fHeadHealth)
+               .def_readwrite("torso_health", &CActor::m_fTorsoHealth)
+               .def_readwrite("lhand_health", &CActor::m_fLHandHealth)
+               .def_readwrite("rhand_health", &CActor::m_fRHandHealth)
+               .def_readwrite("lleg_health", &CActor::m_fLLegHealth)
+               .def_readwrite("rleg_health", &CActor::m_fRLegHealth)
+               .def_readwrite("is_safemode", &CActor::m_is_safemode)
+
+                .def("SetActorCrouch", &CActor::SetActorCrouch)
+               /*
+               progress_head:SetProgressPos(actor.head_health * 100)
+                    progress_tors:SetProgressPos(actor.torso_health * 100)
+                    progress_l_hand:SetProgressPos(actor.lhand_health * 100)
+                   progress_r_hand:SetProgressPos(actor.rhand_health * 100)
+                    progress_l_leg:SetProgressPos(actor.lleg_health * 100)
+                    progress_r_leg:SetProgressPos(actor.rleg_health * 100)*/
+
+
                .property("movement", &get_movement)
                .property("jump_speed", &get_jump_speed, &set_jump_speed)
                .property("state", &get_actor_state)
@@ -207,6 +225,8 @@ void CScriptActor::script_register(lua_State* L)
                .def("is_actor_moving", &CActor::is_actor_moving)
                .def("UpdateArtefactsOnBelt", &CActor::UpdateArtefactsOnBelt)
                .def("IsDetectorActive", &CActor::IsDetectorActive),
+
+            
            class_<CActorObject, bases<CActor, CEntityAlive>>("CActor") // хак с наследованием нужен для переопределения свойств. Luabind не поддерживает property getters override
 
     ];

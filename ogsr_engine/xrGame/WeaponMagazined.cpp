@@ -5,12 +5,6 @@
 #include "actor.h"
 #include "torch.h"
 #include "ParticlesObject.h"
-/*#include "scope.h"
-#include "silencer.h"
-#include "GrenadeLauncher.h"
-#include "Bayonet.h"
-#include "Rail.h"
-*/
 #include "Attaches.h"
 #include "inventory.h"
 #include "xrserver_objects_alife_items.h"
@@ -33,6 +27,12 @@
 #include "level_bullet_manager.h"
 #include "../xr_3da/gamemtllib.h"
 #define KNIFE_MATERIAL_NAME "objects\\knife"
+
+#include "UIGameSP.h"
+#include "HudSound.h"
+#include "ui/UIXmlInit.h"
+
+CUIXml* g_wpnScopeXml = NULL;
 
 CWeaponMagazined::CWeaponMagazined(LPCSTR name, ESoundTypes eSoundType) : CWeapon(name)
 {
@@ -1119,18 +1119,6 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
         }
     }
     break;
-    /* case kSECONDSCOPE : {
-        if (flags & CMD_START && !UseOtherAltScopeButton)
-        {
-            if (IsZoomed())
-                ChangeScopeVision();
-
-            return true;
-        }
-    }
-    break;*/
-
-
     }
 
     return false;
@@ -1371,7 +1359,7 @@ bool CWeaponMagazined::Detach(const char* item_section_name, bool b_spawn_item)
 
 
 extern int scope_2dtexactive;
-void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
+/*void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
 {
     m_fMinZoomK = def_min_zoom_k;
     m_fZoomStepCount = def_zoom_step_count;
@@ -1419,7 +1407,101 @@ void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
             m_UIScope->Init(scope_tex_name.c_str(), Core.Features.test(xrCore::Feature::scope_textures_autoresize) ? "hud\\scope" : "hud\\default", 0, 0, alNone);
         }
     }
+}*/
+void CWeaponMagazined::InitZoomParams(LPCSTR section, bool useTexture)
+{
+    m_fMinZoomK = def_min_zoom_k;
+    m_fZoomStepCount = def_zoom_step_count;
+
+    LPCSTR dynamicZoomParams = READ_IF_EXISTS(pSettings, r_string, section, "scope_dynamic_zoom", NULL);
+    if (dynamicZoomParams)
+    {
+        int num_zoom_param = _GetItemCount(dynamicZoomParams);
+
+        ASSERT_FMT(num_zoom_param >= 1, "!![%s] : Invalid scope_dynamic_zoom parameter in section [%s]", __FUNCTION__, section);
+
+        string128 tmp;
+        m_bScopeDynamicZoom = CInifile::IsBOOL(_GetItem(dynamicZoomParams, 0, tmp));
+
+        if (num_zoom_param > 1)
+            m_fZoomStepCount = atof(_GetItem(dynamicZoomParams, 1, tmp));
+
+        if (num_zoom_param > 2)
+            m_fMinZoomK = atof(_GetItem(dynamicZoomParams, 2, tmp));
+    }
+    else
+        m_bScopeDynamicZoom = false;
+
+    m_fScopeInertionFactor = READ_IF_EXISTS(pSettings, r_float, section, "scope_inertion_factor", m_fControlInertionFactor);
+    clamp(m_fScopeInertionFactor, m_fControlInertionFactor, m_fScopeInertionFactor);
+
+    m_fScopeZoomFactor = pSettings->r_float(section, "scope_zoom_factor");
+    m_fSecondVPZoomFactor = READ_IF_EXISTS(pSettings, r_float, section, "scope_lense_fov_factor", 0.0f);
+
+    m_fZoomHudFov = READ_IF_EXISTS(pSettings, r_float, section, "scope_zoom_hud_fov", 0.0f);
+    m_fSecondVPHudFov = READ_IF_EXISTS(pSettings, r_float, section, "scope_lense_hud_fov", 0.0f);
+
+    if (m_UIScope)
+    {
+        xr_delete(m_UIScope);
+        scope_2dtexactive = 0;
+    }
+    if (useTexture)
+    {
+        shared_str scope_tex_name = READ_IF_EXISTS(pSettings, r_string, section, "scope_texture", "");
+
+        if (scope_tex_name.size() > 0 && !scope_tex_name.equal("none"))
+        {
+            m_UIScope = xr_new<CUIWindow>();
+
+            bool was_set = false;
+
+            if (Core.Features.test(xrCore::Feature::cop_style_scope_texture))
+            {
+                if (!g_wpnScopeXml)
+                {
+                    g_wpnScopeXml = xr_new<CUIXml>();
+                    g_wpnScopeXml->Init(CONFIG_PATH, UI_PATH, "scopes.xml");
+                }
+
+                if (g_wpnScopeXml->NavigateToNode(scope_tex_name.c_str()))
+                {
+                    CUIXmlInit::InitWindow(*g_wpnScopeXml, scope_tex_name.c_str(), 0, m_UIScope);
+
+                    was_set = true;
+                }
+                else if (g_wpnScopeXml->NavigateToNode("wpn_crosshair_fallback") && READ_IF_EXISTS(pSettings, r_bool, section, "wpn_crosshair_fallback", true))
+                {
+                    CUIXmlInit::InitWindow(*g_wpnScopeXml, "wpn_crosshair_fallback", 0, m_UIScope);
+
+                    was_set = true;
+
+                    CUIWindow* scope_wnd = m_UIScope->FindChild("scope_texture");
+                    if (scope_wnd && smart_cast<CUIStatic*>(scope_wnd))
+                    {
+                        smart_cast<CUIStatic*>(scope_wnd)->InitTexture(scope_tex_name.c_str());
+                    }
+                }
+            }
+
+            if (!was_set)
+            {
+                m_UIScope->SetWndRect(0, 0, UI_BASE_WIDTH, UI_BASE_HEIGHT);
+
+                // legacy mode
+                CUIStatic* inner = xr_new<CUIStatic>();
+                inner->SetAutoDelete(true);
+                inner->SetWndRect(0, 0, UI_BASE_WIDTH, UI_BASE_HEIGHT);
+                inner->SetStretchTexture(true);
+                inner->GetStaticItem()->Init(scope_tex_name.c_str(), Core.Features.test(xrCore::Feature::scope_textures_autoresize) ? "hud\\scope" : "hud\\default", 0, 0, alNone);
+                m_UIScope->AttachChild(inner);
+            }
+        }
+    }
 }
+
+
+
 void CWeaponMagazined::InitAddons()
 {
     //////////////////////////////////////////////////////////////////////////

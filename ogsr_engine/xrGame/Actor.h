@@ -779,6 +779,30 @@ public:
     bool GetSafemode() { return m_is_safemode;}
     void SetSafemode(bool flag) { m_is_safemode = flag; }
 
+
+    bool IsPdaInSlot();
+    bool IsBagInSlot();
+    void DeactivateBagSlot();
+    bool NeedToHideActiveBag();
+    void SetNeedBag();
+    bool GetBagStatus();
+
+
+
+    IC void SetActorCrouch(const bool state);
+    bool m_fIsSetedActorCrouch{};
+
+    void UpdateBodyHealth();
+
+private:
+    float m_fHeadHealth{1.f};
+    float m_fTorsoHealth{1.f};
+    float m_fRHandHealth{1.f};
+    float m_fLHandHealth{1.f};
+    float m_fLLegHealth{1.f};
+    float m_fRLegHealth{1.f};
+    std::vector<float*> m_fBodyHealthBones{&m_fHeadHealth, &m_fTorsoHealth, &m_fRHandHealth, &m_fLHandHealth, &m_fLLegHealth, &m_fRLegHealth};
+
 private:
     // иммунитеты от препаратов, применяемые для ослабления хита
     float m_fDrugPsyProtectionCoeff;

@@ -49,6 +49,8 @@
 #include "ui/UIEncyclopediaWnd.h"
 #include "ui/UIDiaryWnd.h"
 
+#include "player_hud.h"
+
 #ifdef DEBUG
 #include "debug_renderer.h"
 #endif

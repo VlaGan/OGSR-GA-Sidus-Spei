@@ -1247,6 +1247,9 @@ void CActor::shedule_Update(u32 DT)
     if (!m_holder)
         m_pPhysics_support->in_shedule_Update(DT);
 
+
+    UpdateBodyHealth();
+
     updated = true;
 };
 #include "debug_renderer.h"
@@ -2004,10 +2007,33 @@ bool CActor::IsDetectorActive() const
     return false;
 }
 
-/*bool CActor::GetSafemode() { 
-    return m_is_safemode; 
-}
-void CActor::SetSafemode(bool flag)
+bool CActor::IsPdaInSlot() { return inventory().ItemFromSlot(PDA_SLOT) ? true : false; }
+bool CActor::IsBagInSlot() { return inventory().ItemFromSlot(BAG_SLOT) ? true : false; }
+
+void CActor::DeactivateBagSlot()
 {
-    m_is_safemode = flag;
-}*/
+    if (inventory().ItemFromSlot(BAG_SLOT))
+        inventory().ItemFromSlot(inventory().PreviousBagActiveSlot) ? inventory().Activate(inventory().PreviousBagActiveSlot) : inventory().Activate(NO_ACTIVE_SLOT);
+    inventory().m_fNeedToHideRuck = false;
+    SetActorCrouch(false);
+}
+bool CActor::NeedToHideActiveBag() { return inventory().m_fNeedToHideRuck; }
+void CActor::SetNeedBag()
+{
+    inventory().m_fStartAnimBag = true;
+    inventory().PreviousBagActiveSlot = inventory().ItemFromSlot(inventory().GetActiveSlot()) ? inventory().GetActiveSlot() : NO_ACTIVE_SLOT;
+    SetActorCrouch(true);
+}
+bool CActor::GetBagStatus() { return inventory().ItemFromSlot(BAG_SLOT) && inventory().m_fNeedToHideRuck; };
+IC void CActor::SetActorCrouch(const bool state) { (m_fIsSetedActorCrouch = state) ? IR_OnKeyboardPress(kCROUCH) : IR_OnKeyboardRelease(kCROUCH); }
+
+void CActor::UpdateBodyHealth()
+{
+    /* for (auto& i : m_fBodyHealthBones)
+    {
+        clamp(*i, 0.f, 1.f);
+    }
+
+    if (m_fIsSetedActorCrouch)
+        IR_OnKeyboardHold(kCROUCH);*/
+}

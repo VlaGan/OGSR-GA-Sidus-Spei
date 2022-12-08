@@ -150,7 +150,9 @@ void CHudItem::Load(LPCSTR section)
     m_safe_mode_offset[0][0].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_position", (Fvector{0.f, 0.f, 0.f})));
     m_safe_mode_offset[0][1].set(READ_IF_EXISTS(pSettings, r_fvector3, section, "safe_mode_orientation", (Fvector{0.f, 0.f, 0.f})));
 
-    m_fAltScopeInstalled = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
+    //m_fAltScopeInstalled = READ_IF_EXISTS(pSettings, r_bool, section, "second_scope_enable", false);
+    m_fAltScopeInstalled = (pSettings->line_exist(hud_sect, "aim_hud_offset_alt_pos_16x9") && pSettings->line_exist(hud_sect, "aim_hud_offset_alt_rot_16x9")) ||
+        (pSettings->line_exist(hud_sect, "aim_hud_offset_alt_pos") && pSettings->line_exist(hud_sect, "aim_hud_offset_alt_rot"));
 
     // Для не оружия (ПДА,например)
     if (!m_fZoomRotateTimeStart)
@@ -938,11 +940,12 @@ void CHudItem::UpdateHudAdditional(Fmatrix& trans, const bool need_update_collis
     Fvector summary_offset{}, summary_rotate{};
 
     attachable_hud_item* hi = HudItemData();
-    u8 idx;
-    if (m_fAltScopeInstalled)
-        m_fAltScopeFactor && !IsZoomed() ? idx = hud_item_measures::m_hands_offset_type_aim2 : idx = GetCurrentHudOffsetIdx();
+    u8 idx = m_fAltScopeInstalled ? (m_fAltScopeFactor && !IsZoomed() ? hud_item_measures::m_hands_offset_type_aim2 : GetCurrentHudOffsetIdx()) : GetCurrentHudOffsetIdx();
+        /* if (m_fAltScopeInstalled)
+        idx = m_fAltScopeFactor && !IsZoomed() ? hud_item_measures::m_hands_offset_type_aim2 : GetCurrentHudOffsetIdx();
     else
-        idx = GetCurrentHudOffsetIdx();
+        idx = GetCurrentHudOffsetIdx();*/
+
 
     bool b_aiming = idx != hud_item_measures::m_hands_offset_type_normal;
 
