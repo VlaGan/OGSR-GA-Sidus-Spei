@@ -368,19 +368,6 @@ void CScriptGameObject::SetNpcPosition(Fvector pos)
         ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "ScriptGameObject : attempt to call SetNpcPosition method for non-CCustomMonster object");
 }
 
-void CScriptGameObject::SetActorLegsVisible(bool val)
-{
-    CActor* actor = smart_cast<CActor*>(&object());
-    if (actor)
-    {
-        actor->setVisible(val);
-        actor->SetDrawLegs(val);
-    }
-    else
-        ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "ScriptGameObject : attempt to call SetActorLegsVisible method for non-actor object");
-}
-
-
 
 CHolderCustom* CScriptGameObject::get_current_holder()
 {

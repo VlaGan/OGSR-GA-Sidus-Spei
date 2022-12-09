@@ -8936,4 +8936,7 @@
       <Filter>Core\Client\Objects\physics\Colliders\RayMotions-Collider</Filter>
     </CustomBuildStep>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
 </Project>

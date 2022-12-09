@@ -818,7 +818,8 @@ float CActor::currentFOV()
 {
     const auto pWeapon = smart_cast<CWeapon*>(inventory().ActiveItem());
 
-    if (eacFirstEye == cam_active && pWeapon && pWeapon->IsZoomed() && (!pWeapon->ZoomTexture() || (!pWeapon->IsRotatingToZoom() && pWeapon->ZoomTexture())))
+    //if (eacFirstEye == cam_active && pWeapon && pWeapon->IsZoomed() && (!pWeapon->ZoomTexture() || (!pWeapon->IsRotatingToZoom() && pWeapon->ZoomTexture())))
+    if (eacFirstEye == cam_active && pWeapon && pWeapon->IsZoomed() && (!pWeapon->UseScopeTexture() || (!pWeapon->IsRotatingToZoom() && pWeapon->UseScopeTexture())))    
         if (Core.Features.test(xrCore::Feature::ogse_wpn_zoom_system))
             return atanf(tanf(g_fov * (0.5f * PI / 180)) / pWeapon->GetZoomFactor()) / (0.5f * PI / 180);
         else
@@ -1174,7 +1175,8 @@ void CActor::shedule_Update(u32 DT)
     //что актер видит перед собой
     collide::rq_result& RQ = HUD().GetCurrentRayQuery();
 
-    if (!input_external_handler_installed() && !m_holder && RQ.O && RQ.range < inventory().GetTakeDist())
+    //if (!input_external_handler_installed() && !m_holder && RQ.O && RQ.range < inventory().GetTakeDist())
+    if (!input_external_handler_installed() && !m_holder && RQ.O && RQ.O->getVisible() && RQ.range < inventory().GetTakeDist())
     {
         m_pObjectWeLookingAt = smart_cast<CGameObject*>(RQ.O);
         m_pUsableObject = smart_cast<CUsableScriptObject*>(RQ.O);
@@ -2013,7 +2015,9 @@ bool CActor::IsBagInSlot() { return inventory().ItemFromSlot(BAG_SLOT) ? true : 
 void CActor::DeactivateBagSlot()
 {
     if (inventory().ItemFromSlot(BAG_SLOT))
-        inventory().ItemFromSlot(inventory().PreviousBagActiveSlot) ? inventory().Activate(inventory().PreviousBagActiveSlot) : inventory().Activate(NO_ACTIVE_SLOT);
+        inventory().ItemFromSlot(inventory().PreviousBagActiveSlot) && inventory().PreviousBagActiveSlot != BAG_SLOT ?
+        inventory().Activate(inventory().PreviousBagActiveSlot) :
+        inventory().Activate(NO_ACTIVE_SLOT);
     inventory().m_fNeedToHideRuck = false;
     SetActorCrouch(false);
 }

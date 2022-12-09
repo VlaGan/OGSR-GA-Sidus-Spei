@@ -797,7 +797,7 @@ bool CUIXmlInit::InitFont(CUIXml& xml_doc, LPCSTR path, int index, u32& color, C
         }
         else if (!xr_strcmp(*font_name, SMALL_FONT_NAME))
         {
-            pFnt = UI()->Font()->pFontStat;
+            pFnt = UI()->Font()->pFontSmall;
         }
         else if (!xr_strcmp(*font_name, LETTERICA16_FONT_NAME))
         {

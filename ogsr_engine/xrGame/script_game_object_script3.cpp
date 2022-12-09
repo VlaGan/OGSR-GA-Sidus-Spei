@@ -111,11 +111,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
         .def("base_out_restrictions", &CScriptGameObject::base_out_restrictions)
         .def("accessible", &CScriptGameObject::accessible_position)
         .def("accessible", &CScriptGameObject::accessible_vertex_id)
-#ifdef LUABIND_09
-        .def("accessible_nearest", &CScriptGameObject::accessible_nearest, out_value(_3))
-#else
         .def("accessible_nearest", &CScriptGameObject::accessible_nearest, out_value<3>())
-#endif
 
         //////////////////////////////////////////////////////////////////////////
         .def("enable_attachable_item", &CScriptGameObject::enable_attachable_item)
@@ -141,12 +137,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 
         .def("get_task_state", &CScriptGameObject::GetGameTaskState)
         .def("set_task_state", &CScriptGameObject::SetGameTaskState)
-#ifdef LUABIND_09
-        .def("give_task", &CScriptGameObject::GiveTaskToActor, adopt(_2))
-#else
         .def("give_task", &CScriptGameObject::GiveTaskToActor, adopt<2>())
-#endif
-
         .def("is_talking", &CScriptGameObject::IsTalking)
         .def("stop_talk", &CScriptGameObject::StopTalk)
         .def("enable_talk", &CScriptGameObject::EnableTalk)
@@ -301,6 +292,7 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
         .def("belt_count", &CScriptGameObject::BeltSize)
         .def("ruck_count", &CScriptGameObject::RuckSize)
         .def("invalidate_inventory", &CScriptGameObject::InvalidateInventory)
+        .def("get_slot", &CScriptGameObject::GetSlot)
 
         // functions for CInventoryItem class
         .def("set_inventory_item_flags", &CScriptGameObject::SetIIFlags)
@@ -419,8 +411,8 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 
         .def("get_hud_item_state", &CScriptGameObject::GetHudItemState)
         .def("radius", &CScriptGameObject::GetRadius)
-        .def("play_hud_animation", (void(CScriptGameObject::*)(LPCSTR))(&CScriptGameObject::play_hud_animation))
-        .def("play_hud_animation", (void(CScriptGameObject::*)(LPCSTR, bool))(&CScriptGameObject::play_hud_animation))
+        .def("play_hud_motion", (u32(CScriptGameObject::*)(LPCSTR))(&CScriptGameObject::play_hud_animation))
+        .def("play_hud_motion", (u32(CScriptGameObject::*)(LPCSTR, bool, u32, float))(&CScriptGameObject::play_hud_animation))
 
         .def("add_feel_touch",
              (void(CScriptGameObject::*)(float, const luabind::object&, const luabind::functor<void>&, const luabind::functor<bool>&))(&CScriptGameObject::addFeelTouch))

@@ -714,18 +714,18 @@ float CScriptGameObject::GetRadius()
     return k->Radius();
 }
 
-void CScriptGameObject::play_hud_animation(LPCSTR anim, bool mix_in)
+u32 CScriptGameObject::play_hud_animation(LPCSTR anim, bool mix_in, u32 state, float speed)
 {
     CHudItem* k = smart_cast<CHudItem*>(&object());
     if (!k)
     {
         ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "CHudItem : cannot access class member play_hud_animation!");
-        return;
+        return 0;
     }
-    k->PlayHUDMotion({anim}, mix_in, k->GetState());
+    return k->PlayHUDMotion(anim, mix_in, state != -1 ? state : k->GetState(), speed);
 }
 
-void CScriptGameObject::play_hud_animation(LPCSTR anim) { play_hud_animation(anim, true); }
+u32 CScriptGameObject::play_hud_animation(LPCSTR anim) { return play_hud_animation(anim, true, -1, 1.f); }
 
 void CScriptGameObject::addFeelTouch(float radius, const luabind::object& lua_object, const luabind::functor<void>& new_delete)
 {
@@ -916,4 +916,14 @@ void CScriptGameObject::unregister_in_combat()
     ASSERT_FMT(stalker, "[%s]: %s not a CAI_Stalker", __FUNCTION__, object().cName().c_str());
     if (stalker->g_Alive() && stalker->agent_manager().member().registered_in_combat(stalker))
         stalker->agent_manager().member().unregister_in_combat(stalker);
+}
+
+void CScriptGameObject::setEnabled(bool value)
+{
+    object().setEnabled(value);
+}
+
+void CScriptGameObject::setVisible(bool value)
+{
+    object().setVisible(value);
 }

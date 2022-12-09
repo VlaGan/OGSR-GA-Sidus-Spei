@@ -74,6 +74,7 @@ enum ECallbackType
     eOnActorWeaponFireStart,
     eOnActorWeaponFireEnd,
     eOnActorWeaponFire,
+    eOnFootStep,
 
     eCellItemFocus,
     eCellItemFocusLost,

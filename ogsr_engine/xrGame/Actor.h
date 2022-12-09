@@ -432,6 +432,7 @@ protected:
     //расстояние подсветки предметов
     float m_fPickupInfoRadius;
 
+
     void PickupModeUpdate();
     void PickupInfoDraw(CObject* object);
     void PickupModeUpdate_COD();
@@ -461,6 +462,7 @@ public:
     void StopAnyMove();
 
     bool AnyAction() { return (mstate_real & mcAnyAction) != 0; };
+    bool AnyMove() { return (mstate_real & mcAnyMove) != 0; };
 
     bool is_jump();
     bool is_crouch();

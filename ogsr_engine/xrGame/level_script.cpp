@@ -427,13 +427,36 @@ CEnvironment* environment() { return g_pGamePersistent->pEnvironment; }
 CEnvDescriptor* current_environment(CEnvironment* self) { return self->CurrentEnv; }
 
 extern bool g_bDisableAllInput;
+
 void disable_input()
 {
     g_bDisableAllInput = true;
     if (Actor())
         Actor()->PickupModeOff();
 }
-void enable_input() { g_bDisableAllInput = false; }
+void enable_input()
+{
+    g_bDisableAllInput = false;
+
+    Fvector2 pos = GetUICursor()->GetCursorPosition();
+    GetUICursor()->SetUICursorPosition(pos);
+}
+
+bool g_block_all_except_movement{};
+bool g_actor_allow_ladder{true};
+bool g_actor_allow_pda{true};
+
+void block_all_except_movement(bool b) { g_block_all_except_movement = b; }
+
+bool only_movement_allowed() { return g_block_all_except_movement; }
+
+void set_actor_allow_ladder(bool b) { g_actor_allow_ladder = b; }
+
+bool actor_ladder_allowed() { return g_actor_allow_ladder; }
+
+void set_actor_allow_pda(bool b) { g_actor_allow_pda = b; }
+
+bool actor_pda_allowed() { return g_actor_allow_pda; }
 
 void spawn_phantom(const Fvector& position) { Level().spawn_item("m_phantom", position, u32(-1), u16(-1), false); }
 
@@ -826,6 +849,27 @@ void demo_record_set_direct_input(bool f)
 
 CEffectorBobbing* get_effector_bobbing() { return Actor()->GetEffectorBobbing(); }
 
+void iterate_nearest(const Fvector& pos, float radius, luabind::functor<bool> functor)
+{
+    xr_vector<CObject*> m_nearest;
+    Level().ObjectSpace.GetNearest(m_nearest, pos, radius, NULL);
+
+    if (!m_nearest.size())
+        return;
+
+    xr_vector<CObject*>::iterator it = m_nearest.begin();
+    xr_vector<CObject*>::iterator it_e = m_nearest.end();
+    for (; it != it_e; it++)
+    {
+        CGameObject* obj = smart_cast<CGameObject*>(*it);
+        if (!obj)
+            continue;
+        if (functor(obj->lua_game_object()))
+            break;
+    }
+}
+
+
 #pragma optimize("s", on)
 void CLevel::script_register(lua_State* L)
 {
@@ -884,8 +928,18 @@ void CLevel::script_register(lua_State* L)
             def("add_call", ((CPHCall * (*)(const luabind::object&, LPCSTR, LPCSTR)) & add_call)),
             def("remove_call", ((void (*)(const luabind::functor<bool>&, const luabind::functor<void>&)) & remove_call)),
             def("remove_call", ((void (*)(const luabind::object&, const luabind::functor<bool>&, const luabind::functor<void>&)) & remove_call)),
-            def("remove_call", ((void (*)(const luabind::object&, LPCSTR, LPCSTR)) & remove_call)), def("remove_calls_for_object", &remove_calls_for_object),
-            def("present", &is_level_present), def("disable_input", &disable_input), def("enable_input", &enable_input), def("spawn_phantom", &spawn_phantom),
+            def("remove_call", ((void (*)(const luabind::object&, LPCSTR, LPCSTR)) & remove_call)), def("remove_calls_for_object", remove_calls_for_object),
+
+            def("present", is_level_present),
+
+            def("disable_input", disable_input), def("enable_input", enable_input), 
+
+            def("only_allow_movekeys", block_all_except_movement), def("only_movekeys_allowed", only_movement_allowed),
+
+            def("set_actor_allow_ladder", set_actor_allow_ladder), def("actor_ladder_allowed", actor_ladder_allowed),
+            def("set_actor_allow_pda", set_actor_allow_pda), def("actor_pda_allowed", actor_pda_allowed),
+
+            def("spawn_phantom", spawn_phantom),
 
             def("get_bounding_volume", &get_bounding_volume),
 
@@ -918,6 +972,8 @@ void CLevel::script_register(lua_State* L)
             //
             def("send_event_key_press", &send_event_key_press), def("send_event_key_release", &send_event_key_release), def("send_event_key_hold", &send_event_key_hold),
             def("send_event_mouse_wheel", &send_event_mouse_wheel),
+
+            def("iterate_nearest", &iterate_nearest),
 
             def("change_level", &change_level), def("set_cam_inert", &set_cam_inert), def("set_monster_relation", &set_monster_relation), def("patrol_path_add", &patrol_path_add),
             def("patrol_path_remove", &patrol_path_remove), def("valid_vertex_id", &valid_vertex_id), def("vertex_count", &vertex_count), def("disable_vertex", &disable_vertex),

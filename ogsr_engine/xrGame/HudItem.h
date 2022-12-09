@@ -90,7 +90,7 @@ protected: //чтоб нельзя было вызвать на прямую
     u32 m_dwMotionStartTm;
     u32 m_dwMotionEndTm;
     u32 m_startedMotionState;
-    u8 m_started_rnd_anim_idx;
+    //u8 m_started_rnd_anim_idx;
     bool m_bStopAtEndAnimIsRunning;
     bool SprintType{};
     bool BobbingEnable{};
@@ -129,6 +129,8 @@ public:
     virtual void OnH_B_Independent(bool just_before_destroy);
     virtual void OnH_A_Independent();
 
+    virtual bool NeedBlendAnm();
+
     virtual BOOL net_Spawn(CSE_Abstract* DC);
     virtual void net_Destroy();
 
@@ -164,9 +166,10 @@ public:
 
     virtual void UpdateXForm() = 0;
 
-    u32 PlayHUDMotion(const char* M, const bool bMixIn, const u32 state, const bool randomAnim = true);
-    u32 PlayHUDMotion(std::initializer_list<const char*>, const bool bMixIn, const u32 state, const bool randomAnim = true);
-    u32 PlayHUDMotion_noCB(const shared_str& M, const bool bMixIn, const bool randomAnim = true);
+    u32 PlayHUDMotion(std::initializer_list<const char*>, const bool bMixIn, const u32 state, const bool randomAnim = true, float speed = 1.f);
+    u32 PlayHUDMotion(const char* M, const bool bMixIn, const u32 state, const bool randomAnim = true, float speed = 1.f);
+    u32 PlayHUDMotion_noCB(const shared_str& M, const bool bMixIn, const bool randomAnim = true, float speed = 1.f);
+
     bool AnimationExist(const char* M) const;
     void StopCurrentAnimWithoutCallback();
 
@@ -231,7 +234,7 @@ public:
         CWeaponBobbing(CHudItem* parent);
         ~CWeaponBobbing() = default;
 
-        void Update(Fmatrix& m);
+        void Update(Fmatrix& m, Fmatrix& m2);
         void CheckState();
 
     private:

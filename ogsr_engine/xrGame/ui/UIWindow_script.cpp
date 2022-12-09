@@ -14,7 +14,7 @@
 CFontManager& mngr() { return *(UI()->Font()); }
 
 // hud font
-CGameFont* GetFontSmall() { return mngr().pFontStat; }
+CGameFont* GetFontSmall() { return mngr().pFontSmall; }
 
 CGameFont* GetFontMedium() { return mngr().pFontMedium; }
 CGameFont* GetFontDI() { return mngr().pFontDI; }

@@ -266,7 +266,8 @@ public:
     CScriptCallbackEx<void>& callback(GameObject::ECallbackType type) const;
     virtual LPCSTR visual_name(CSE_Abstract* server_entity);
 
-    virtual void On_B_NotCurrentEntity(){};
+	virtual	void On_B_NotCurrentEntity(){};
+	void FootStepCallback(float power, bool b_play, bool b_on_ground);
 
     CSE_ALifeDynamicObject* alife_object() const; // alpet: возвращает серверный экземпляр для этого объекта
     virtual void UpdateXFORM(const Fmatrix& upd); // alpet: для обновления позиции и направления

@@ -1,26 +1,18 @@
 #include "stdafx.h"
 #include "actor.h"
-#include "Actor_Flags.h"
 #include "inventory.h"
 #include "xrserver_objects_alife_monsters.h"
 #include "xrServer.h"
-
-#include "CameraLook.h"
 #include "CameraFirstEye.h"
 
 #include "ActorEffector.h"
 
 #include "PHWorld.h"
 #include "level.h"
-#include "xr_level_controller.h"
-#include "game_cl_base.h"
-#include "infoportion.h"
 #include "alife_registry_wrappers.h"
 #include "..\Include/xrRender/Kinematics.h"
 #include "..\Include/xrRender/KinematicsAnimated.h"
 #include "client_spawn_manager.h"
-#include "hit.h"
-#include "PHDestroyable.h"
 #include "CharacterPhysicsSupport.h"
 #include "Grenade.h"
 #include "WeaponMagazined.h"
@@ -31,25 +23,17 @@
 #include "map_manager.h"
 #include "HUDManager.h"
 #include "ui/UIArtefactPanel.h"
-#include "ui/UIMainIngameWnd.h"
-#include "gamepersistent.h"
-#include "game_object_space.h"
 #include "GameTaskManager.h"
-#include "game_base_kill_type.h"
 #include "holder_custom.h"
 #include "actor_memory.h"
 #include "actor_statistic_mgr.h"
-#include "characterphysicssupport.h"
-#include "game_cl_base_weapon_usage_statistic.h"
-#include "clsid_game.h"
 #include "alife_simulator_header.h"
 #include "actorcondition.h"
+#include "player_hud.h"
 #include "UIGameSP.h"
 #include "ui/UIPDAWnd.h"
 #include "ui/UIEncyclopediaWnd.h"
 #include "ui/UIDiaryWnd.h"
-
-#include "player_hud.h"
 
 #ifdef DEBUG
 #include "debug_renderer.h"
@@ -81,7 +65,7 @@ BOOL CActor::net_Spawn(CSE_Abstract* DC)
     // force actor to be local on server client
     CSE_Abstract* e = (CSE_Abstract*)(DC);
     CSE_ALifeCreatureActor* E = smart_cast<CSE_ALifeCreatureActor*>(e);
-    if (OnServer())
+
     {
         E->s_flags.set(M_SPAWN_OBJECT_LOCAL, TRUE);
     }
@@ -209,8 +193,7 @@ BOOL CActor::net_Spawn(CSE_Abstract* DC)
         }
     */
     SetDefaultVisualOutfit(cNameVisual());
-    ChangeVisual(m_DefaultVisualOutfit_legs);
-    m_bFirstEye = true;
+
     smart_cast<IKinematics*>(Visual())->CalculateBones();
 
     //--------------------------------------------------------------
@@ -250,10 +233,8 @@ BOOL CActor::net_Spawn(CSE_Abstract* DC)
     spatial.type |= STYPE_REACTTOSOUND;
     psHUD_Flags.set(HUD_WEAPON_RT, TRUE);
 
-    if (Level().IsDemoPlay() && OnClient())
-    {
-        setLocal(FALSE);
-    };
+    g_player_hud->load_default();
+
     return TRUE;
 }
 
@@ -296,7 +277,6 @@ void CActor::net_Destroy()
     m_holderID = u16(-1);
 
     SetDefaultVisualOutfit(NULL);
-    SetDefaultVisualOutfit_legs(NULL);
 
     if (g_actor == this)
         g_actor = NULL;
@@ -331,15 +311,8 @@ void CActor::net_Relcase(CObject* O)
 
 BOOL CActor::net_Relevant() // relevant for export to server
 {
-    if (OnServer())
-    {
-        return getSVU() | getLocal();
-    }
-    else
-    {
-        return Local() & g_Alive();
-    };
-};
+    return getSVU() | getLocal();
+}
 
 void CActor::SetCallbacks()
 {

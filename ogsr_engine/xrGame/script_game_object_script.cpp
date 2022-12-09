@@ -105,7 +105,8 @@ void CScriptGameObject::script_register(lua_State* L)
                     value("on_actor_zoom_out", int(GameObject::eOnActorWeaponZoomOut)), 
                      value("on_actor_fire_start", int(GameObject::eOnActorWeaponFireStart)), 
                 value("on_actor_fire_end", int(GameObject::eOnActorWeaponFireEnd)), 
-                value("on_actor_fire", int(GameObject::eOnActorWeaponFire))
+                value("on_actor_fire", int(GameObject::eOnActorWeaponFire)),
+        value("on_foot_step", int(GameObject::eOnFootStep))
                    
                    ],
 

@@ -230,7 +230,6 @@ public:
     // Actor only
     void SetActorPosition(Fvector pos);
     void SetActorDirection(float dir);
-    void SetActorLegsVisible(bool val);
     // CCustomMonster
     bool CheckObjectVisibility(const CScriptGameObject* tpLuaGameObject);
     bool CheckObjectVisibilityNow(const CScriptGameObject* tpLuaGameObject);
@@ -656,6 +655,7 @@ public:
     bool IsOnBelt(CScriptGameObject* object) const;
     bool IsInRuck(CScriptGameObject* object) const;
     bool IsInSlot(CScriptGameObject* object) const;
+    u8 GetSlot() const;
     void MoveToSlot(CScriptGameObject* object, bool bNotActivate = true);
     void MoveToBelt(CScriptGameObject* object);
     void MoveToRuck(CScriptGameObject* object);
@@ -793,8 +793,8 @@ public:
     // alpet: visual functions for CWeapon descedants
     _DECLARE_FUNCTION10(alife_object, CSE_ALifeDynamicObject*);
 
-    void play_hud_animation(LPCSTR anim, bool mix_in);
-    void play_hud_animation(LPCSTR anim);
+    u32 play_hud_animation(LPCSTR anim, bool mix_in, u32 state, float speed);
+    u32 play_hud_animation(LPCSTR anim);
 
     void addFeelTouch(float, const luabind::object&, const luabind::functor<void>&);
     void addFeelTouch(float, const luabind::object&, const luabind::functor<void>&, const luabind::functor<bool>&);
@@ -824,6 +824,10 @@ public:
     bool controller_psy_hit_active();
 
     bool can_kill_enemy();
+
+    void setEnabled(bool value);
+
+    void setVisible(bool value);
 
     DECLARE_SCRIPT_REGISTER_FUNCTION
 };

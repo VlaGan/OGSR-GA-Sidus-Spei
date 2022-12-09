@@ -296,10 +296,6 @@ BOOL CGameObject::net_Spawn(CSE_Abstract* DC)
 
     // Net params
     setLocal(E->s_flags.is(M_SPAWN_OBJECT_LOCAL));
-    if (Level().IsDemoPlay() && OnClient())
-    {
-        setLocal(FALSE);
-    };
 
     setReady(TRUE);
     g_pGameLevel->Objects.net_Register(this);
@@ -1128,4 +1124,10 @@ void CGameObject::FeelTouchAddonsRelcase(CObject* O)
             ft->feel_touch_new_delete(GO->lua_game_object(), is_new);
         });
     }
+}
+
+//because don't want to use pch_script.h in step_manager.cpp
+void CGameObject::FootStepCallback(float power, bool b_play, bool b_on_ground)
+{
+	this->callback(GameObject::eOnFootStep)(this->lua_game_object(), power, b_play, b_on_ground);
 }
