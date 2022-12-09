@@ -208,10 +208,35 @@ void CInifile::Load(IReader* F, LPCSTR path)
                 strconcat(sizeof(fn), fn, path, inc_name);
                 _splitpath(fn, inc_path, folder, 0, 0);
                 strcat_s(inc_path, folder);
-                IReader* I = FS.r_open(fn);
-                R_ASSERT3(I, "Can't find include file:", inc_name);
-                Load(I, inc_path);
-                FS.r_close(I);
+
+                //IReader* I = FS.r_open(fn);
+                //R_ASSERT3(I, "Can't find include file:", inc_name);
+                //Load(I, inc_path);
+                //FS.r_close(I);
+
+                const auto loadFile = [&](const string_path _fn, const string_path name) {
+                    IReader* I = FS.r_open(_fn);
+                    R_ASSERT3(I, "Can't find include file:", name);
+                    Load(I, inc_path);
+                    FS.r_close(I);
+                };
+
+                if (strstr(inc_name, "*.ltx"))
+                {
+                    FS_FileSet fset;
+                    FS.file_list(fset, path, FS_ListFiles, inc_name);
+
+                    for (FS_FileSet::iterator it = fset.begin(); it != fset.end(); it++)
+                    {
+                        LPCSTR _name = it->name.c_str();
+                        string_path _fn;
+                        strconcat(sizeof(_fn), _fn, path, _name);
+                        loadFile(_fn, _name);
+                    }
+                }
+                else
+                    loadFile(fn, inc_name);
+
             }
         }
         else if (str[0] && (str[0] == '['))
@@ -239,7 +264,7 @@ void CInifile::Load(IReader* F, LPCSTR path)
                     xr_string tmp;
                     _GetItem(inherited_names, k, tmp);
                     Sect& inherited = r_section(tmp.c_str());
-                    for (auto& it : inherited.Data)
+                    for (auto& it : inherited.Ordered_Data)
                     {
                         Item I = {it.first, it.second};
                         insert_item(Current, I);

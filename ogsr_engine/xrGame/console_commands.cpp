@@ -64,7 +64,8 @@ extern ESingleGameDifficulty g_SingleGameDifficulty;
 extern BOOL g_show_wnd_rect;
 extern BOOL g_show_wnd_rect2;
 extern BOOL g_show_wnd_rect_text;
-//-----------------------------------------------------------
+extern BOOL g_console_show_always;
+    //-----------------------------------------------------------
 extern float g_fTimeFactor;
 extern BOOL g_bCopDeathAnim;
 extern int g_bHudAdjustMode;
@@ -99,6 +100,38 @@ extern int g_dof_zoom_far;
 extern int g_dof_zoom_near;
 
 ENGINE_API extern int g_3dscopes_fps_factor;
+
+void get_files_list(xr_vector<shared_str>& files, LPCSTR dir, LPCSTR file_ext)
+{
+    VERIFY(dir && file_ext);
+    files.clear();
+
+    FS_Path* P = FS.get_path(dir);
+    P->m_Flags.set(FS_Path::flNeedRescan, TRUE);
+    FS.m_Flags.set(CLocatorAPI::flNeedCheck, TRUE);
+    FS.rescan_physical_pathes();
+
+    string_path fext;
+    xr_strconcat(fext, "*", file_ext);
+
+    FS_FileSet files_set;
+    FS.file_list(files_set, dir, FS_ListFiles, fext);
+    u32 len_str_ext = xr_strlen(file_ext);
+
+    FS_FileSetIt itb = files_set.begin();
+    FS_FileSetIt ite = files_set.end();
+
+    for (; itb != ite; ++itb)
+    {
+        LPCSTR fn_ext = (*itb).name.c_str();
+        VERIFY(xr_strlen(fn_ext) > len_str_ext);
+        string_path fn;
+        strncpy_s(fn, sizeof(fn), fn_ext, xr_strlen(fn_ext) - len_str_ext);
+        files.push_back(fn);
+    }
+    FS.m_Flags.set(CLocatorAPI::flNeedCheck, FALSE);
+}
+
 
 class CCC_MemStats : public IConsole_Command
 {
@@ -205,9 +238,6 @@ public:
             Msg("Invalid time factor! (%.4f)", id1);
         else
         {
-            if (!OnServer())
-                return;
-
             Level().Server->game->SetGameTimeFactor(id1);
         }
     }
@@ -385,6 +415,7 @@ bool valid_file_name(LPCSTR file_name)
 
 #include "UIGameCustom.h"
 #include "HUDManager.h"
+
 class CCC_ALifeSave : public IConsole_Command
 {
 public:
@@ -503,6 +534,8 @@ public:
         if (MainMenu()->IsActive())
             MainMenu()->Activate(false);
 
+        Console->Hide();
+
         if (Device.Paused())
             Device.Pause(FALSE, TRUE, TRUE, "CCC_ALifeLoadFrom");
 
@@ -511,6 +544,8 @@ public:
         net_packet.w_stringZ(saved_game);
         Level().Send(net_packet, net_flags(TRUE));
     }
+
+    virtual void fill_tips(vecTips& tips, u32 mode) { get_files_list(tips, "$game_saves$", SAVE_EXTENSION); }
 };
 
 class CCC_LoadLastSave : public IConsole_Command
@@ -827,6 +862,22 @@ struct CCC_JumpToLevel : public IConsole_Command
                 return;
             }
         Msg("! There is no level \"%s\" in the game graph!", level);
+    }
+
+    virtual void fill_tips(vecTips& tips, u32 mode)
+    {
+        if (!ai().get_alife())
+        {
+            Msg("! ALife simulator is needed to perform specified command!");
+            return;
+        }
+
+        GameGraph::LEVEL_MAP::const_iterator itb = ai().game_graph().header().levels().begin();
+        GameGraph::LEVEL_MAP::const_iterator ite = ai().game_graph().header().levels().end();
+        for (; itb != ite; ++itb)
+        {
+            tips.push_back((*itb).second.name());
+        }
     }
 };
 
@@ -1233,7 +1284,9 @@ void CCC_RegisterCommands()
     CMD1(CCC_GameDifficulty, "g_game_difficulty");
 
     CMD3(CCC_Mask, "g_dof_scope", &psActorFlags, AF_DOF_SCOPE);
-    CMD3(CCC_Mask, "g_dof_zoom", &psActorFlags, AF_DOF_ZOOM);
+    CMD3(CCC_Mask, "g_dof_zoom_old", &psActorFlags, AF_DOF_ZOOM);
+    //CMD3(CCC_Mask, "g_dof_zoom", &psActorFlags, AF_DOF_ZOOM_NEW);
+    //(CCC_Mask, "g_dof_reload", &psActorFlags, AF_DOF_RELOAD);
     CMD4(CCC_Integer, "g_dof_zoom_far", &g_dof_zoom_far, 10, 100);
     CMD4(CCC_Integer, "g_dof_zoom_near", &g_dof_zoom_near, 10, 100);
 
@@ -1271,8 +1324,7 @@ void CCC_RegisterCommands()
 
     if (IS_OGSR_GA)
         psHUD_FOV_def = 0.65f;
-    else
-        CMD4(CCC_Float, "hud_fov", &psHUD_FOV_def, 0.1f, 1.0f);
+    CMD4(CCC_Float, "hud_fov", &psHUD_FOV_def, 0.1f, 1.0f);
 
     CMD4(CCC_Float, "fov", &g_fov, 5.0f, 140.0f);
 
@@ -1485,6 +1537,8 @@ void CCC_RegisterCommands()
     CMD4(CCC_Integer, "show_wnd_rect", &g_show_wnd_rect, 0, 1);
     CMD4(CCC_Integer, "show_wnd_rect_all", &g_show_wnd_rect2, 0, 1);
     CMD4(CCC_Integer, "show_wnd_rect_names", &g_show_wnd_rect_text, 0, 1);
+    CMD4(CCC_Integer, "g_console_show_always", &g_console_show_always, 0, 1);
+
 
     *g_last_saved_game = 0;
 

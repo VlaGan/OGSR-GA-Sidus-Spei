@@ -275,6 +275,21 @@ void CCC_LoadCFG::Execute(LPCSTR args)
     {
         while (!F->eof())
         {
+            if (strstr(cfg_full_name, "user.ltx") && F->tell() == 0)
+            {
+                if (F->r_u8() == 0) // Костыль от ситуации когда в редких случаях почему-то у игроков бьётся user.ltx - оказывается набит нулями, в результате чего игра не
+                                    // запускается. Не понятно почему так происходит, поэтому сделал тут обработку такой ситуации.
+                {
+                    Msg("!![%s] file [%s] broken!", __FUNCTION__, cfg_full_name);
+                    FS.r_close(F);
+                    FS.file_delete(cfg_full_name);
+                    return;
+                }
+                else
+                {
+                    F->seek(F->tell() - sizeof(u8));
+                }
+            }
             F->r_string(str, sizeof(str));
             if (allow(str))
                 Console->Execute(str);
@@ -617,8 +632,8 @@ extern int g_ErrorLineCount;
 extern float g_fontWidthScale;
 extern float g_fontHegihtScale;
 
-
-// crookr fake scope params (sorry)
+float g_fontHegihtScale = 0;
+    // crookr fake scope params (sorry)
 float scope_fog_interp = 0.15f;
 float scope_fog_travel = 0.25f;
 float scope_fog_attack = 0.66f;
@@ -632,7 +647,7 @@ float scope_brightness = 1.0f;
 float scope_radius = 0.f;
 float scope_fog_radius = 1.25f;
 float scope_fog_sharp = 4.0f;
-int scope_2dtexactive = 0.0;
+int scope_2dtexactive = 0;
 
 
 void CCC_Register()

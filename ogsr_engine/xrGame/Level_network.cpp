@@ -26,7 +26,6 @@ void CLevel::remove_objects()
 
     Game().reset_ui();
 
-    if (OnServer())
     {
         VERIFY(Server);
         Server->SLS_Clear();
@@ -45,8 +44,6 @@ void CLevel::remove_objects()
         Sleep(100);
     }
 
-    if (OnClient())
-        ClearAllObjects();
 
     BulletManager().Clear();
     ph_commander().clear();
@@ -120,7 +117,6 @@ void CLevel::net_Stop()
 
 void CLevel::ClientSend()
 {
-    ASSERT_FMT(!OnClient(), "");
     for (u32 i = 0; i < Objects.o_count(); i++)
     {
         CObject* O = Objects.o_get_by_iterator(i);
@@ -179,8 +175,6 @@ extern float phTimefactor;
 
 void CLevel::Send(NET_Packet& P, u32 dwFlags, u32 dwTimeout)
 {
-    if (IsDemoPlay() && m_bDemoStarted)
-        return;
     // optimize the case when server located in our memory
     ClientID _clid;
     _clid.set(1);
@@ -197,7 +191,7 @@ void CLevel::net_Update()
         Device.Statistic->netClient2.End();
     }
     // If server - perform server-update
-    if (Server && OnServer())
+    if (Server)
     {
         Device.Statistic->netServer.Begin();
         Server->Update();
@@ -277,7 +271,7 @@ void CLevel::OnBuildVersionChallenge()
 {
     NET_Packet P;
     P.w_begin(M_CL_AUTH);
-    u64 auth = FS.auth_get();
+    u64 auth = 0;
     P.w_u64(auth);
     Send(P, net_flags(TRUE, TRUE, TRUE, TRUE));
 };
@@ -294,26 +288,6 @@ void CLevel::OnConnectResult(NET_Packet* P)
         m_bConnectResult = false;
 
     m_sConnectResult = ResultStr;
-
-    if (IsDemoSave())
-    {
-        //		P->r_stringZ(m_sDemoHeader.LevelName);
-        //		P->r_stringZ(m_sDemoHeader.GameType);
-        m_sDemoHeader.bServerClient = P->r_u8();
-        P->r_stringZ(m_sDemoHeader.ServerOptions);
-        //-----------------------------------------
-        FILE* fTDemo = fopen(m_sDemoName, "ab");
-        if (fTDemo)
-        {
-            fwrite(&m_sDemoHeader.bServerClient, 32, 1, fTDemo); //-V512
-
-            DWORD OptLen = m_sDemoHeader.ServerOptions.size();
-            fwrite(&OptLen, 4, 1, fTDemo);
-            fwrite(*m_sDemoHeader.ServerOptions, OptLen, 1, fTDemo);
-            fclose(fTDemo);
-        };
-        //-----------------------------------------
-    };
 };
 
 void CLevel::ClearAllObjects()

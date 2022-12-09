@@ -2,8 +2,6 @@
 #define GameFontH
 #pragma once
 
-#include "MbHelpers.h"
-
 #include "../Include/xrRender/FontRender.h"
 
 class ENGINE_API CGameFont
@@ -59,7 +57,6 @@ public:
         fsGradient = (1 << 0),
         fsDeviceIndependent = (1 << 1),
         fsValid = (1 << 2),
-        fsMultibyte = (1 << 3),
 
         fsForceDWORD = u32(-1)
     };
@@ -80,27 +77,25 @@ public:
     void SetHeight(float S);
 
     IC float GetHeight() { return fCurrentHeight; };
+
     IC void SetInterval(float x, float y) { vInterval.set(x, y); };
     IC void SetInterval(const Fvector2& v) { vInterval.set(v); };
+
+    IC Fvector2 GetInterval() { return vInterval; };
+
     IC void SetAligment(EAligment aligment) { eCurrentAlignment = aligment; }
 
     float SizeOf_(LPCSTR s);
-    float SizeOf_(const wide_char* wsStr);
     float SizeOf_(const char cChar); // only ANSII
 
     float CurrentHeight_();
 
-    float ScaleHeightDelta() { return (fCurrentHeight * vInterval.y * GetHegihtScale() - fCurrentHeight * vInterval.y) / 2; };
+    float ScaleHeightDelta() { return (fCurrentHeight * vInterval.y * GetHeightScale() - fCurrentHeight * vInterval.y) / 2; };
 
     void OutSetI(float x, float y);
     void OutSet(float x, float y);
 
     void MasterOut(BOOL bCheckDevice, BOOL bUseCoords, BOOL bScaleCoords, BOOL bUseSkip, float _x, float _y, float _skip, LPCSTR fmt, va_list p);
-
-    u32 smart_strlen(const char* S);
-    BOOL IsMultibyte() { return (uFlags & fsMultibyte); };
-    u16 SplitByWidth(u16* puBuffer, u16 uBufferSize, float fTargetWidth, const char* pszText);
-    u16 GetCutLengthPos(float fTargetWidth, const char* pszText);
 
     void OutI(float _x, float _y, LPCSTR fmt, ...);
     void Out(float _x, float _y, LPCSTR fmt, ...);
@@ -113,12 +108,13 @@ public:
     IC void Clear() { strings.clear(); };
 
     float GetWidthScale();
-    float GetHegihtScale();
+    float GetHeightScale();
 
     void SetWidthScale(float f) { fXScale = f; }
-    void SetHegihtScale(float f) { fYScale = f; }
+    void SetHeightScale(float f) { fYScale = f; }
 
     shared_str m_font_name;
+    bool m_bCustom{};
 };
 
 #endif // _XR_GAMEFONT_H_

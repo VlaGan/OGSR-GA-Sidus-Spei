@@ -237,9 +237,6 @@
     <ClInclude Include="GameFont.h">
       <Filter>Interfaces\Render\Font output</Filter>
     </ClInclude>
-    <ClInclude Include="MbHelpers.h">
-      <Filter>Interfaces\Render\Font output</Filter>
-    </ClInclude>
     <ClInclude Include="device.h">
       <Filter>Interfaces\Render\Execution &amp; 3D</Filter>
     </ClInclude>
@@ -324,6 +321,18 @@
     </ClInclude>
     <ClInclude Include="DiscordRPC.hpp">
       <Filter>Discord</Filter>
+    </ClInclude>
+    <ClInclude Include="line_edit_control.h">
+      <Filter>Engine\Console</Filter>
+    </ClInclude>
+    <ClInclude Include="line_editor.h">
+      <Filter>Engine\Console</Filter>
+    </ClInclude>
+    <ClInclude Include="edit_actions.h">
+      <Filter>Engine\Console</Filter>
+    </ClInclude>
+    <ClInclude Include="os_clipboard.h">
+      <Filter>Engine\Console</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -459,9 +468,6 @@
     <ClCompile Include="GameFont.cpp">
       <Filter>Interfaces\Render\Font output</Filter>
     </ClCompile>
-    <ClCompile Include="MbHelpers.cpp">
-      <Filter>Interfaces\Render\Font output</Filter>
-    </ClCompile>
     <ClCompile Include="device.cpp">
       <Filter>Interfaces\Render\Execution &amp; 3D</Filter>
     </ClCompile>
@@ -534,6 +540,27 @@
     <ClCompile Include="GameMtlLib.cpp" />
     <ClCompile Include="DiscordRPC.cpp">
       <Filter>Discord</Filter>
+    </ClCompile>
+    <ClCompile Include="line_edit_control.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="line_editor.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="edit_actions.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="os_clipboard.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="XR_IOConsole_callback.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="XR_IOConsole_control.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="XR_IOConsole_get.cpp">
+      <Filter>Engine\Console</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -95,7 +95,7 @@ public:
     BENCH_SEC_SCRAMBLEVTBL2
 
     virtual void fill_tips(vecTips& tips, u32 mode) { add_LRU_to_tips(tips); }
-    //			vecLRU&	LRU				() { return m_LRU; }
+
     virtual void add_to_LRU(shared_str const& arg);
     void add_LRU_to_tips(vecTips& tips);
 
@@ -129,7 +129,11 @@ public:
     virtual void fill_tips(vecTips& tips, u32 mode)
     {
         TStatus str;
-        xr_sprintf(str, sizeof(str), "%s  (current)  [on/off]", value->test(mask) ? "on" : "off");
+        xr_sprintf(str, sizeof(str), "on%s", value->test(mask) ? " (current)" : "");
+        tips.push_back(str);
+
+        str;
+        xr_sprintf(str, sizeof(str), "off%s", !value->test(mask) ? " (current)" : "");
         tips.push_back(str);
     }
 };
@@ -156,7 +160,11 @@ public:
     virtual void fill_tips(vecTips& tips, u32 mode)
     {
         TStatus str;
-        xr_sprintf(str, sizeof(str), "%s  (current)  [on/off]", value->test(mask) ? "on" : "off");
+        xr_sprintf(str, sizeof(str), "on%s", value->test(mask) ? " (current)" : "");
+        tips.push_back(str);
+
+        str;
+        xr_sprintf(str, sizeof(str), "off%s", !value->test(mask) ? " (current)" : "");
         tips.push_back(str);
     }
 };
@@ -271,11 +279,11 @@ public:
         while (xr_strlen(S) && ('0' == S[xr_strlen(S) - 1]))
             S[xr_strlen(S) - 1] = 0;
     }
-    virtual void Info(TInfo& I) { xr_sprintf(I, sizeof(I), "float value in range [%3.3f,%3.3f]", min, max); }
+    virtual void Info(TInfo& I) { xr_sprintf(I, sizeof(I), "float value in range [%3.5f,%3.5f]", min, max); }
     virtual void fill_tips(vecTips& tips, u32 mode)
     {
         TStatus str;
-        xr_sprintf(str, sizeof(str), "%3.5f  (current)  [%3.3f,%3.3f]", *value, min, max);
+        xr_sprintf(str, sizeof(str), "%3.5f  (current)  [%3.5f,%3.5f]", *value, min, max);
         tips.push_back(str);
         IConsole_Command::fill_tips(tips, mode);
     }
@@ -327,66 +335,6 @@ public:
         IConsole_Command::fill_tips(tips, mode);
     }
 };
-
-
-
-class ENGINE_API CCC_Vector4 : public IConsole_Command
-{
-protected:
-    Fvector4* value;
-    Fvector4 min, max;
-
-public:
-    CCC_Vector4(LPCSTR N, Fvector4* V, const Fvector4 _min, const Fvector4 _max) : IConsole_Command(N), value(V)
-    {
-        min.set(_min);
-        max.set(_max);
-    };
-    const Fvector4 GetValue() const { return *value; };
-    Fvector4* GetValuePtr() const { return value; };
-
-    virtual void Execute(LPCSTR args)
-    {
-        Fvector4 v;
-        if (4 != sscanf(args, "%f,%f,%f,%f", &v.x, &v.y, &v.z, &v.w))
-        {
-            if (4 != sscanf(args, "(%f,%f,%f,%f)", &v.x, &v.y, &v.z, &v.w))
-            {
-                InvalidSyntax();
-                return;
-            }
-        }
-
-        if (v.x < min.x || v.y < min.y || v.z < min.z || v.w < min.w)
-        {
-            InvalidSyntax();
-            return;
-        }
-        if (v.x > max.x || v.y > max.y || v.z > max.z || v.w > max.w)
-        {
-            InvalidSyntax();
-            return;
-        }
-        value->set(v);
-    }
-
-    virtual void Status(TStatus& S) { xr_sprintf(S, sizeof(S), "(%f, %f, %f, %f)", value->x, value->y, value->z, value->w); }
-
-    virtual void Info(TInfo& I) { xr_sprintf(I, sizeof(I), "vector4 in range [%e,%e,%e,%e]-[%e,%e,%e,%e]", min.x, min.y, min.z, min.w, max.x, max.y, max.z, max.w); }
-
-    virtual void fill_tips(vecTips& tips, u32 mode)
-    {
-        TStatus str;
-        xr_sprintf(str, sizeof(str), "(%e, %e, %e, %e) (current) [(%e,%e,%e,%e)-(%e,%e,%e,%e)]", value->x, value->y, value->z, value->w, min.x, min.y, min.z, min.w, max.x, max.y,
-                   max.z, max.w);
-        tips.push_back(str);
-        IConsole_Command::fill_tips(tips, mode);
-    }
-};
-
-
-
-
 
 class ENGINE_API CCC_Integer : public IConsole_Command
 {
@@ -462,4 +410,59 @@ class ENGINE_API CCC_LoadCFG_custom : public CCC_LoadCFG
 public:
     CCC_LoadCFG_custom(LPCSTR cmd);
     virtual bool allow(LPCSTR cmd);
+};
+
+
+class ENGINE_API CCC_Vector4 : public IConsole_Command
+{
+protected:
+    Fvector4* value;
+    Fvector4 min, max;
+
+public:
+    CCC_Vector4(LPCSTR N, Fvector4* V, const Fvector4 _min, const Fvector4 _max) : IConsole_Command(N), value(V)
+    {
+        min.set(_min);
+        max.set(_max);
+    };
+    const Fvector4 GetValue() const { return *value; };
+    Fvector4* GetValuePtr() const { return value; };
+
+    virtual void Execute(LPCSTR args)
+    {
+        Fvector4 v;
+        if (4 != sscanf(args, "%f,%f,%f,%f", &v.x, &v.y, &v.z, &v.w))
+        {
+            if (4 != sscanf(args, "(%f,%f,%f,%f)", &v.x, &v.y, &v.z, &v.w))
+            {
+                InvalidSyntax();
+                return;
+            }
+        }
+
+        if (v.x < min.x || v.y < min.y || v.z < min.z || v.w < min.w)
+        {
+            InvalidSyntax();
+            return;
+        }
+        if (v.x > max.x || v.y > max.y || v.z > max.z || v.w > max.w)
+        {
+            InvalidSyntax();
+            return;
+        }
+        value->set(v);
+    }
+
+    virtual void Status(TStatus& S) { xr_sprintf(S, sizeof(S), "(%f, %f, %f, %f)", value->x, value->y, value->z, value->w); }
+
+    virtual void Info(TInfo& I) { xr_sprintf(I, sizeof(I), "vector4 in range [%e,%e,%e,%e]-[%e,%e,%e,%e]", min.x, min.y, min.z, min.w, max.x, max.y, max.z, max.w); }
+
+    virtual void fill_tips(vecTips& tips, u32 mode)
+    {
+        TStatus str;
+        xr_sprintf(str, sizeof(str), "(%e, %e, %e, %e) (current) [(%e,%e,%e,%e)-(%e,%e,%e,%e)]", value->x, value->y, value->z, value->w, min.x, min.y, min.z, min.w, max.x, max.y,
+                   max.z, max.w);
+        tips.push_back(str);
+        IConsole_Command::fill_tips(tips, mode);
+    }
 };

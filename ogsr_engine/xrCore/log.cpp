@@ -2,17 +2,16 @@
 
 #include "log.h"
 
-#include <sstream> //для std::stringstream
 #include <fstream> //для std::ofstream
 #include <iomanip> //для std::strftime
 #include <array> //для std::array
 
 static LogCallback LogCB = nullptr;
-xr_vector<xr_string> LogFile;
+xr_vector<std::string> LogFile;
 static std::ofstream logstream;
 string_path logFName{};
 
-static void AddOne(xr_string& split, bool first_line)
+static void AddOne(std::string& split, bool first_line)
 {
     static std::recursive_mutex logCS;
     std::scoped_lock<decltype(logCS)> lock(logCS);
@@ -47,7 +46,35 @@ static void AddOne(xr_string& split, bool first_line)
     if (!logstream.is_open())
         insert_time();
 
-    LogFile.push_back(split); //Вывод в консоль
+    static std::string last_str;
+    static int items_count;
+
+    //LogFile.push_back(split); //Вывод в консоль
+
+    if (last_str == split)
+    {
+        std::string tmp = split.c_str();
+
+        if (items_count == 0)
+            items_count = 2;
+        else
+            items_count++;
+
+        tmp += " [";
+        tmp += std::to_string(items_count).c_str();
+        tmp += "]";
+
+        LogFile.erase(LogFile.end() - 1);
+        LogFile.push_back(tmp);
+    }
+    else
+    {
+        // DUMP_PHASE;
+        LogFile.push_back(split);
+        last_str = split;
+        items_count = 0;
+    }
+
 
     if (logstream.is_open())
     {
@@ -59,12 +86,10 @@ static void AddOne(xr_string& split, bool first_line)
     }
 }
 
-void Log(std::stringstream&& ss)
+void Log(const std::string& str)
 {
-    std::string str = ss.str();
-
     if (str.empty())
-        return; //Строка пуста - выходим
+        return;
 
     bool not_first_line = false;
 
@@ -72,23 +97,28 @@ void Log(std::stringstream&& ss)
     const char& color_s = str.front();
     const bool have_color = std::find(color_codes.begin(), color_codes.end(), color_s) != color_codes.end(); //Ищем в начале строки цветовой код
 
-    for (xr_string item; std::getline(ss, item);) //Разбиваем текст по "\n"
+    std::vector<std::string> substrs;
+    size_t beg{};
+    for (size_t end{}; (end = str.find("\n", end)) != std::string::npos; ++end) // Разбиваем текст по "\n"
+    {
+        substrs.push_back(str.substr(beg, end - beg));
+        beg = end + 1;
+    }
+    substrs.push_back(str.substr(beg));
+
+    for (auto& str : substrs)
     {
         if (not_first_line && have_color)
         {
-            item = ' ' + item;
-            item = color_s + item; //Если надо, перед каждой строкой вставляем спец-символ цвета, чтобы в консоли цветными были все строки текста, а не только первая.
+            str = ' ' + str;
+            str = color_s + str; //Если надо, перед каждой строкой вставляем спец-символ цвета, чтобы в консоли цветными были все строки текста, а не только первая.
         }
-        AddOne(item, !not_first_line);
+        AddOne(str, !not_first_line);
         not_first_line = true;
     }
 }
 
-void Log(const char* s)
-{
-    std::stringstream ss(s);
-    Log(std::move(ss));
-}
+void Log(const char* s) { Log(std::string{s}); }
 
 void __cdecl Msg(const char* format, ...)
 {
