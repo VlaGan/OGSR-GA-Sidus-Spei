@@ -159,6 +159,8 @@
 #include "InventoryBox.h"
 #include "inventoryContainer.h"
 
+#include "Flashlight.h"
+
 #define ADD(a, b, c, d) add<a, b>(c, d)
 
 void CObjectFactory::register_classes()
@@ -273,6 +275,8 @@ void CObjectFactory::register_classes()
     ADD(CLaser, CSE_ALifeItem, CLSID_OBJECT_W_LASER, "wpn_laser");
     ADD(CTactTorch, CSE_ALifeItem, CLSID_OBJECT_W_TORCH, "wpn_torch");
     ADD(CTactHandler, CSE_ALifeItem, CLSID_OBJECT_W_TACTHANDLER, "wpn_tact_handler");
+
+    ADD(CFlashlight, CSE_ALifeItem, CLSID_OBJECT_W_FLASHLIGHT, "detector_flashlight");
 
     // Inventory
     ADD(CBolt, CSE_ALifeItemBolt, CLSID_IITEM_BOLT, "obj_bolt");

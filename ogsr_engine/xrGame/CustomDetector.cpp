@@ -10,6 +10,8 @@
 #include "player_hud.h"
 #include "Weapon.h"
 
+#include "..\xr_3da\LightAnimLibrary.h"
+
 ITEM_INFO::~ITEM_INFO()
 {
     if (pParticle)
@@ -24,7 +26,7 @@ bool CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u16* slot_to_activate
     CInventoryItem& iitm = itm->item();
     u32 slot = iitm.BaseSlot();
     bool bres = (slot == FIRST_WEAPON_SLOT || slot == KNIFE_SLOT || slot == BOLT_SLOT);
-    CActor* pActor = smart_cast<CActor*>(H_Parent());
+    auto pActor = smart_cast<CActor*>(H_Parent());
     auto& Inv = pActor->inventory();
 
     if (!bres && slot_to_activate)
@@ -53,7 +55,7 @@ bool CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u16* slot_to_activate
     {
         CWeapon* W = smart_cast<CWeapon*>(itm);
         if (W)
-            bres = bres && (W->GetState() != CHUDState::eBore) && (W->GetState() != CWeapon::eReload) && (W->GetState() != CWeapon::eSwitch) && !W->IsZoomed();
+            bres = bres && (W->GetState() != CHUDState::eBore) && (W->GetState() != CWeapon::eReload) && (W->GetState() != CWeapon::eSwitch) /* && !W->IsZoomed()*/;
     }
     return bres;
 }
@@ -62,6 +64,9 @@ bool CCustomDetector::CheckCompatibility(CHudItem* itm)
 {
     if (!inherited::CheckCompatibility(itm))
         return false;
+
+   // if (ZoomedIn)
+    //    return false;
 
     if (!CheckCompatibilityInt(itm, nullptr))
     {
@@ -85,6 +90,9 @@ void CCustomDetector::ShowDetector(bool bFastMode)
 
 void CCustomDetector::ToggleDetector(bool bFastMode)
 {
+   // if (ZoomedIn)
+    //    return;
+
     m_bNeedActivation = false;
     m_bFastAnimMode = bFastMode;
 
@@ -140,6 +148,26 @@ void CCustomDetector::OnStateSwitch(u32 S, u32 oldState)
         SetPending(FALSE);
     }
     break;
+    case eIdleZoomIn: {
+        if (AnimationExist("anm_idle_aim_start"))
+        {
+            PlayHUDMotion("anm_idle_aim_start", false, eIdleZoomIn);
+            SetPending(TRUE);
+        }
+    }
+    break;
+    case eIdleZoomOut: {
+        if (AnimationExist("anm_idle_aim_end"))
+        {
+            PlayHUDMotion("anm_idle_aim_end", false, eIdleZoomOut);
+            SetPending(TRUE);
+        }
+    }
+    break;
+    case eIdleZoom: {
+        PlayIdleAimAnm();
+    }
+    break;
     }
 }
 
@@ -160,6 +188,9 @@ void CCustomDetector::OnAnimationEnd(u32 state)
     }
     break;
     case eIdle: SwitchState(eIdle); break;
+    case eIdleZoomIn: SwitchState(eIdleZoom); break;
+    case eIdleZoom:SwitchState(ZoomedIn ? eIdleZoom : eIdleZoomOut); break;
+    case eIdleZoomOut: SwitchState(eIdle); break;
     default: inherited::OnAnimationEnd(state);
     }
 }
@@ -198,6 +229,9 @@ void CCustomDetector::Load(LPCSTR section)
 
     HUD_SOUND::LoadSound(section, "snd_draw", sndShow, SOUND_TYPE_ITEM_TAKING);
     HUD_SOUND::LoadSound(section, "snd_holster", sndHide, SOUND_TYPE_ITEM_HIDING);
+
+    // Шоб не просило то, чего не нужно в класе фонарика
+    IsFlashlight = READ_IF_EXISTS(pSettings, r_string, section, "flashlight_section", false);
 }
 
 void CCustomDetector::shedule_Update(u32 dt)
@@ -215,7 +249,8 @@ void CCustomDetector::shedule_Update(u32 dt)
     if (GetCondition() <= 0.01f)
         return;
 
-    m_artefacts.feel_touch_update(P, m_fAfDetectRadius);
+    if (!IsFlashlight)
+        m_artefacts.feel_touch_update(P, m_fAfDetectRadius);
 }
 
 bool CCustomDetector::IsWorking() const { return m_bWorking && H_Parent() && H_Parent() == Level().CurrentViewEntity(); }
@@ -244,7 +279,7 @@ void CCustomDetector::UpdateVisibility()
             if (wpn)
             {
                 u32 state = wpn->GetState();
-                if (wpn->IsZoomed() || state == CWeapon::eReload || state == CWeapon::eSwitch)
+                if (/* wpn->IsZoomed() ||*/ state == CWeapon::eReload || state == CWeapon::eSwitch)
                 {
                     HideDetector(true);
                     m_bNeedActivation = true;
@@ -277,7 +312,34 @@ void CCustomDetector::UpdateCL()
     UpdateVisibility();
     if (!IsWorking())
         return;
-    UpfateWork();
+
+    if (smart_cast<CActor*>(H_Parent()))
+    {
+        if (auto pActiveItem = g_actor->inventory().ActiveItem())
+        {
+            if (auto pWeapon = smart_cast<CWeapon*>(pActiveItem))
+            {
+                if (pWeapon->IsZoomed() && pWeapon->IsRotatingToZoom() && !ZoomedIn && !IsPending())
+                {
+                    SwitchState(eIdleZoomIn);
+                    ZoomedIn = true;
+                }
+                if (!pWeapon->IsZoomed() && ZoomedIn)
+                {
+                    SwitchState(eIdleZoomOut);
+                    ZoomedIn = false;
+                }
+            }
+            else if (ZoomedIn)
+                ZoomedIn = false;
+        }
+        else if (ZoomedIn)
+            ZoomedIn = false;
+    }
+
+
+    if (!IsFlashlight)
+        UpfateWork();
 }
 
 void CCustomDetector::OnH_A_Chield() { inherited::OnH_A_Chield(); }
@@ -335,6 +397,24 @@ Fvector CCustomDetector::GetDirectionForCollision()
     return Device.vCameraDirection;
 }
 
+
+void CCustomDetector::PlayIdleAimAnm() {
+    // В анимках для ходьбы надыбал только walk(_right, _left, _back), поэтому пускай для начала
+    // будет так, в будущем можно будет сделать остальные, просто ограничивая скорость walk анимки
+    if (auto pActor = smart_cast<CActor*>(H_Parent()))
+    { 
+        if (pActor->is_actor_moving() && AnimationExist("anm_idle_aim_walk"))
+            PlayHUDMotion("anm_idle_aim_walk", false, eIdleZoom);
+        else
+        {// впринципе, +-, но анимация зума у детекторов очень длинная(из-за этого может быть прикол с walk), мб обрезать её?
+            if (AnimationExist("anm_idle_aim"))
+                PlayHUDMotion("anm_idle_aim", false, eIdleZoom);
+        }
+        SetPending(FALSE);
+    }
+}
+
+
 BOOL CAfList::feel_touch_contact(CObject* O)
 {
     auto pAf = smart_cast<CArtefact*>(O);
@@ -366,4 +446,219 @@ CZoneList::~CZoneList()
 {
     clear();
     destroy();
+}
+
+
+
+
+//////////////////////////////////////////////////////////
+// 
+// VlaGan: Ручной фонарик
+// 
+//////////////////////////////////////////////////////////
+
+//#include "Flashlight.h"
+
+CFlashlight::~CFlashlight()
+{
+    flashlight_render.destroy();
+    flashlight_omni.destroy();
+    flashlight_render.destroy();
+}
+
+void CFlashlight::Load(LPCSTR section)
+{
+    inherited::Load(section);
+
+    if (!flashlight_render && pSettings->line_exist(section, "flashlight_section"))
+    {
+        flashlight_attach_bone = pSettings->r_string(section, "torch_light_bone");
+        flashlight_attach_offset = Fvector{pSettings->r_float(section, "torch_attach_offset_x"), pSettings->r_float(section, "torch_attach_offset_y"),
+                                           pSettings->r_float(section, "torch_attach_offset_z")};
+        flashlight_omni_attach_offset = Fvector{pSettings->r_float(section, "torch_omni_attach_offset_x"), pSettings->r_float(section, "torch_omni_attach_offset_y"),
+                                                pSettings->r_float(section, "torch_omni_attach_offset_z")};
+
+        const bool b_r2 = psDeviceFlags.test(rsR2) || psDeviceFlags.test(rsR3) || psDeviceFlags.test(rsR4);
+
+        const char* m_light_section = pSettings->r_string(section, "flashlight_section");
+
+        flashlight_lanim = LALib.FindItem(READ_IF_EXISTS(pSettings, r_string, m_light_section, "color_animator", ""));
+
+        flashlight_render = ::Render->light_create();
+        flashlight_render->set_type(IRender_Light::SPOT);
+        flashlight_render->set_shadow(true);
+
+        const Fcolor clr = READ_IF_EXISTS(pSettings, r_fcolor, m_light_section, b_r2 ? "color_r2" : "color", (Fcolor{0.6f, 0.55f, 0.55f, 1.0f}));
+        flashlight_fBrightness = clr.intensity();
+        flashlight_render->set_color(clr);
+        const float range = READ_IF_EXISTS(pSettings, r_float, m_light_section, b_r2 ? "range_r2" : "range", 50.f);
+        flashlight_render->set_range(range);
+        flashlight_render->set_cone(deg2rad(READ_IF_EXISTS(pSettings, r_float, m_light_section, "spot_angle", 60.f)));
+        flashlight_render->set_texture(READ_IF_EXISTS(pSettings, r_string, m_light_section, "spot_texture", nullptr));
+
+        flashlight_omni = ::Render->light_create();
+        flashlight_omni->set_type(
+            (IRender_Light::LT)(READ_IF_EXISTS(pSettings, r_u8, m_light_section, "omni_type",
+                                               2))); // KRodin: вообще omni это обычно поинт, но поинт светит во все стороны от себя, поэтому тут спот используется по умолчанию.
+        flashlight_omni->set_shadow(false);
+
+        const Fcolor oclr = READ_IF_EXISTS(pSettings, r_fcolor, m_light_section, b_r2 ? "omni_color_r2" : "omni_color", (Fcolor{1.0f, 1.0f, 1.0f, 0.0f}));
+        flashlight_omni->set_color(oclr);
+        const float orange = READ_IF_EXISTS(pSettings, r_float, m_light_section, b_r2 ? "omni_range_r2" : "omni_range", 0.25f);
+        flashlight_omni->set_range(orange);
+
+        flashlight_glow = ::Render->glow_create();
+        flashlight_glow->set_texture(READ_IF_EXISTS(pSettings, r_string, m_light_section, "glow_texture", "glow\\glow_torch_r2"));
+        flashlight_glow->set_color(clr);
+        flashlight_glow->set_radius(READ_IF_EXISTS(pSettings, r_float, m_light_section, "glow_radius", 0.3f));
+
+        flashlight_light_bone = READ_IF_EXISTS(pSettings, r_string, section, "torch_cone_bones", "");
+        flashlight_show_time = READ_IF_EXISTS(pSettings, r_float, section, "torch_enable_time_anm_show", 0.6f);
+        flashlight_hide_time = READ_IF_EXISTS(pSettings, r_float, section, "torch_disable_time_anm_hide", 0.17f);
+
+        // TODO: Оффсеты фонарика в аиме
+        flashlight_attach_offset_aim = Fvector{pSettings->r_float(section, "torch_aim_attach_offset_x"),
+                                               pSettings->r_float(section, "torch_aim_attach_offset_y"),
+                                               pSettings->r_float(section, "torch_aim_attach_offset_z")}.add(flashlight_attach_offset);
+        
+        flashlight_discharge_speed = pSettings->r_float(section, "torch_discharge_speed");
+    }
+}
+
+void CFlashlight::UpdateCL()
+{
+    inherited::UpdateCL();
+    if (HudItemData())
+        UpdateFlashlight();
+    else
+        DeactivateFLash();
+}
+
+void CFlashlight::UpdateFlashlight()
+{
+    if (this->m_fCondition < 0.05f)
+    {
+        if (flashlight_light_bone.size())
+            if (HudItemData()->get_bone_visible(flashlight_light_bone))
+                HudItemData()->set_bone_visible(flashlight_light_bone, false, true);
+        else if (flashlight_render->get_active())
+            {
+                DeactivateFLash();
+                return;
+            }
+        else
+            return;
+    }
+    
+    
+    // нормально ли так будет?... (ин тайм вкл/выкл)
+    if (GetState() == eShowing && !IsShown)
+        if (flashlight_show_hide_factor < flashlight_show_time)
+            flashlight_show_hide_factor += Device.fTimeDelta;
+        else
+        {
+            flashlight_show_hide_factor = 0;
+            IsShown = true;
+        }
+    else if (GetState() == eHiding) //&& IsShown)
+        if (flashlight_show_hide_factor < flashlight_hide_time)
+            flashlight_show_hide_factor += Device.fTimeDelta;
+        else
+        {
+            flashlight_show_hide_factor = 0;
+            IsShown = false;
+        }
+
+    // Скрытие кости света
+    if (flashlight_light_bone.size())
+        HudItemData()->set_bone_visible(flashlight_light_bone, IsShown, TRUE);
+
+    if (flashlight_render)
+    {
+        if (IsShown)
+        {
+            flashlight_render->set_active(true);
+            flashlight_omni->set_active(true);
+            flashlight_glow->set_active(true);
+        }
+        else
+        {
+            flashlight_render->set_active(false);
+            flashlight_omni->set_active(false);
+            flashlight_glow->set_active(false);
+        }
+
+        if (flashlight_render->get_active())
+        {
+            Fvector flashlight_pos_omni, flashlight_dir, flashlight_dir_omni;
+
+            if (GetHUDmode()){                                                             
+                GetBoneOffsetPosDir(flashlight_attach_bone, flashlight_pos, flashlight_dir, ZoomedIn ? flashlight_attach_offset_aim : flashlight_attach_offset);
+                CorrectDirFromWorldToHud(flashlight_dir);
+
+                GetBoneOffsetPosDir(flashlight_attach_bone, flashlight_pos_omni, flashlight_dir_omni, flashlight_omni_attach_offset);
+                CorrectDirFromWorldToHud(flashlight_dir_omni);
+            }
+
+            Fmatrix flashlightXForm;
+            flashlightXForm.identity();
+            flashlightXForm.k.set(flashlight_dir);
+            Fvector::generate_orthonormal_basis_normalized(flashlightXForm.k, flashlightXForm.j, flashlightXForm.i);
+            flashlight_render->set_position(flashlight_pos);
+            flashlight_render->set_rotation(flashlightXForm.k, flashlightXForm.i);
+
+            flashlight_glow->set_position(flashlight_pos);
+            flashlight_glow->set_direction(flashlightXForm.k);
+
+            Fmatrix flashlightomniXForm;
+            flashlightomniXForm.identity();
+            flashlightomniXForm.k.set(flashlight_dir_omni);
+            Fvector::generate_orthonormal_basis_normalized(flashlightomniXForm.k, flashlightomniXForm.j, flashlightomniXForm.i);
+            flashlight_omni->set_position(flashlight_pos_omni);
+            flashlight_omni->set_rotation(flashlightomniXForm.k, flashlightomniXForm.i);
+
+            // calc color animator
+            if (flashlight_lanim)
+            {
+                int frame;
+                const u32 clr = flashlight_lanim->CalculateBGR(Device.fTimeGlobal, frame);
+
+                Fcolor fclr{(float)color_get_B(clr), (float)color_get_G(clr), (float)color_get_R(clr), 1.f};
+
+                // переделать, ибо еффекта не видно, всё равно ярко
+                fclr.mul_rgb((flashlight_fBrightness * (0.5f + (m_fCondition ? m_fCondition / 2.f: 0.f))) / 255.f);
+
+                flashlight_render->set_color(fclr);
+                flashlight_omni->set_color(fclr);
+                flashlight_glow->set_color(fclr);
+            }
+
+             m_fCondition -= flashlight_discharge_speed;
+        }
+    }
+}
+
+void CFlashlight::OnMoveToSlot() { 
+    inherited::OnMoveToSlot();
+    DeactivateFLash();
+
+};
+void CFlashlight::OnMoveToRuck(EItemPlace prevPlace) { 
+    inherited::OnMoveToRuck(prevPlace); 
+    DeactivateFLash();
+}
+
+void CFlashlight::DeactivateFLash()
+{
+    if (flashlight_render)
+        if (flashlight_render->get_active())
+        {
+            flashlight_render->set_active(false);
+            flashlight_omni->set_active(false);
+            flashlight_glow->set_active(false);
+        }
+    if(IsShown)IsShown = false;
+
+    //if (flashlight_light_bone.size() && HudItemData())
+     //   HudItemData()->set_bone_visible(flashlight_light_bone, IsShown, TRUE);
 }

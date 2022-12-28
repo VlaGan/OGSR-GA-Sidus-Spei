@@ -5,6 +5,7 @@
 #include "CustomZone.h"
 #include "Artifact.h"
 #include "ai_sounds.h"
+#include "weapon.h"
 
 class CCustomZone;
 class CInventoryOwner;
@@ -170,6 +171,15 @@ public:
 
     virtual u32 ef_detector_type() const override { return 1; }
 
+    bool IsFlashlight{}, ZoomedIn{};
+    // Шоб детекторы в зуме не коллизировали
+    IC virtual bool CollisionAllowed() override
+    {
+        u32 state = this->GetState();
+        return state != eIdleZoom && state != eIdleZoomIn && state != eIdleZoomOut && GetNearwall() && used_cop_fire_point();
+    }
+    void PlayIdleAimAnm();
+
 protected:
     bool CheckCompatibilityInt(CHudItem* itm, u16* slot_to_activate);
     void TurnDetectorInternal(bool b);
@@ -199,4 +209,42 @@ protected:
 public:
     CZoneList() = default;
     virtual ~CZoneList();
+};
+
+
+
+class CFlashlight : public CCustomDetector
+{
+private:
+    typedef CCustomDetector inherited;
+
+    shared_str flashlight_attach_bone;
+    Fvector flashlight_omni_attach_offset{};
+    ref_light flashlight_render;
+    ref_light flashlight_omni;
+    ref_glow flashlight_glow;
+    CLAItem* flashlight_lanim{};
+    float flashlight_fBrightness{1.f};
+    float flashlight_discharge_speed{};
+    Fvector flashlight_attach_offset{}, flashlight_pos{};
+    Fvector flashlight_attach_offset_aim{};
+
+public:
+    shared_str flashlight_light_bone;
+    float flashlight_show_time{}, flashlight_show_hide_factor{};
+    float flashlight_hide_time{};
+
+    bool IsShown{}, isHidden{true};
+
+    CFlashlight() = default;
+    ~CFlashlight();
+    virtual void Load(LPCSTR section);
+    virtual void UpdateCL();
+    void UpdateFlashlight();
+
+    virtual void OnMoveToSlot();
+    virtual void OnMoveToRuck(EItemPlace prevPlace);
+
+    virtual void DeactivateFLash();
+    CFlashlight* cast_toch() { return this; }
 };

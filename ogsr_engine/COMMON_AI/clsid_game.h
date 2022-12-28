@@ -110,6 +110,8 @@ constexpr auto CLSID_OBJECT_W_LASER = MK_CLSID('W', '_', 'L', 'A', 'S', 'E', 'R'
 constexpr auto CLSID_OBJECT_W_TORCH = MK_CLSID('W', '_', 'T', 'T', 'O', 'R', 'C', 'H');
 constexpr auto CLSID_OBJECT_W_TACTHANDLER = MK_CLSID('W', '_', 'T', 'H', 'A', 'N', 'D', 'L');
 
+constexpr auto CLSID_OBJECT_W_FLASHLIGHT = MK_CLSID('D', 'E', 'T', '_', 'F', 'L', 'I', 'T');
+
 // Modifiers
 constexpr auto CLSID_OBJECT_M_QDAMAGE = MK_CLSID('O', '_', 'Q', 'D', 'M', 'G', ' ', ' ');
 constexpr auto CLSID_OBJECT_M_IMMORTAL = MK_CLSID('O', '_', 'I', 'M', 'M', 'O', 'R', 'T');

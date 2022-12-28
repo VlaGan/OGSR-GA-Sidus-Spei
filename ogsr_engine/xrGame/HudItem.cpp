@@ -505,15 +505,8 @@ void CHudItem::PlayAnimSprintEnd()
 
 bool CHudItem::TryPlayAnimIdle()
 {
-    // костыль, чтобы штык-нож не прерывало
-    auto pWM = smart_cast<CWeaponMagazined*>(this);
-    bool is_bayonet;
-    if (pWM)
-        is_bayonet = pWM->IsBayonetActive();
-    else
-        is_bayonet = false;
 
-    if ((!IsZoomed() || !smart_cast<CWeapon*>(this)) && !is_bayonet)
+    if ((!IsZoomed() || !smart_cast<CWeapon*>(this)))
     {
         if (auto pActor = smart_cast<CActor*>(object().H_Parent()))
         {
@@ -697,7 +690,7 @@ bool CHudItem::used_cop_fire_point() const
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CHudItem::CollisionAllowed() const
+bool CHudItem::CollisionAllowed()
 { //Если выкл реалистичный прицел или у ствола ТЧ-стайл фейр поинт или ствол в режиме зума - коллизия работать не будет.
     return m_nearwall_on && psHUD_Flags.test(HUD_CROSSHAIR_HARD) && used_cop_fire_point() && m_fZoomRotationFactor < 1.0f && m_fAltScopeFactor < 1.f;
  

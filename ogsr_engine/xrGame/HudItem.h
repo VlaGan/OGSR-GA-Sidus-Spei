@@ -39,6 +39,9 @@ public:
         eReady,
         eThrow,
         eThrowEnd,
+        eIdleZoom,
+        eIdleZoomIn,
+        eIdleZoomOut,
     };
 
 private:
@@ -225,6 +228,7 @@ public:
     }
 
     virtual void on_renderable_Render() = 0;
+    bool GetNearwall() { return m_nearwall_on; }
 
 public:
     class CWeaponBobbing
@@ -310,7 +314,7 @@ private:
     shared_str world_sect;
     float hud_recalc_koef{};
     void UpdateCollision(Fmatrix& trans);
-    bool CollisionAllowed() const;
+    virtual bool CollisionAllowed();
     bool m_nearwall_on{};
     float m_nearwall_target_hud_fov{}, m_nearwall_target_aim_hud_fov{};
     float m_nearwall_dist_max{}, m_nearwall_dist_min{};

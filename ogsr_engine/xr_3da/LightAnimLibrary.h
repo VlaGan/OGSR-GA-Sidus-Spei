@@ -5,6 +5,7 @@ class ENGINE_API CLAItem
 public:
     shared_str cName;
     float fFPS;
+    float def_fFPS;
     DEFINE_MAP(int, u32, KeyMap, KeyPairIt);
     KeyMap Keys;
     int iFrameCount;
@@ -21,6 +22,10 @@ public:
     u32 InterpolateBGR(int frame);
     u32 CalculateRGB(float T, int& frame);
     u32 CalculateBGR(float T, int& frame);
+
+    void SetFramerate(float framerate) { fFPS = framerate; }
+    void ResetFramerate() { fFPS = def_fFPS; }
+
     void Resize(int new_len);
     void InsertKey(int frame, u32 color);
     void DeleteKey(int frame);
