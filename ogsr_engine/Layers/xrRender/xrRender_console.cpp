@@ -231,6 +231,7 @@ float ps_current_detail_density = 0.6;
 float ps_current_detail_scale = 1.f;
 
 float ps_r2_gloss_factor = 4.0f;
+float ps_r2_gloss_min = 0.f;
 
 // crookr
 int scope_fake_enabled = 1;
@@ -805,6 +806,7 @@ void xrRender_initconsole()
 
     //- Mad Max
     CMD4(CCC_Float, "r2_gloss_factor", &ps_r2_gloss_factor, .0f, 10.f);
+    CMD4(CCC_Float, "r2_gloss_min", &ps_r2_gloss_min, .001f, 1.0f);
     //- Mad Max
 
 #ifdef DEBUG
@@ -839,6 +841,14 @@ void xrRender_initconsole()
     CMD4(CCC_Vector4, "shader_param_6", &ps_dev_param_6, tw2_min1, tw2_max1);
     CMD4(CCC_Vector4, "shader_param_7", &ps_dev_param_7, tw2_min1, tw2_max1);
     CMD4(CCC_Vector4, "shader_param_8", &ps_dev_param_8, tw2_min1, tw2_max1);
+
+    CMD4(CCC_Float, "r__exposure", &ps_r2_img_exposure, 0.5f, 4.0f);
+    CMD4(CCC_Float, "r__gamma", &ps_r2_img_gamma, 0.5f, 2.2f);
+    CMD4(CCC_Float, "r__saturation", &ps_r2_img_saturation, 0.0f, 2.0f);
+
+    Fvector r_cgmin = {0.f, 0.f, 0.f};
+    Fvector r_cgmax = {1.f, 1.f, 1.f};
+    CMD4(CCC_Vector3, "r__color_grading", &ps_r2_img_cg, r_cgmin, r_cgmax);
 
     CMD4(CCC_Integer, "r__fakescope", &scope_fake_enabled, 0, 1); // crookr for fake scope
 

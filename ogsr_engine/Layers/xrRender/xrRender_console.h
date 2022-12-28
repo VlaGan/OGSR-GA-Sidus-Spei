@@ -50,6 +50,11 @@ extern ECORE_API Fvector4 ps_dev_param_6;
 extern ECORE_API Fvector4 ps_dev_param_7;
 extern ECORE_API Fvector4 ps_dev_param_8;
 
+extern ECORE_API float ps_r2_img_exposure; // r2-only
+extern ECORE_API float ps_r2_img_gamma; // r2-only
+extern ECORE_API float ps_r2_img_saturation; // r2-only
+extern ECORE_API Fvector ps_r2_img_cg; // r2-only
+
 extern ECORE_API int scope_fake_enabled;
 extern ECORE_API bool IsAltScope; // WEAPONS.CPP
 

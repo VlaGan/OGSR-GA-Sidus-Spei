@@ -548,6 +548,7 @@ Fvector4 ps_dev_param_6 = {0.f, 0.f, 0.f, 0.f};
 Fvector4 ps_dev_param_7 = {0.f, 0.f, 0.f, 0.f};
 Fvector4 ps_dev_param_8 = {0.f, 0.f, 0.f, 0.f};
 
+
 static class dev_param_1 : public R_constant_setup
 {
     virtual void setup(R_constant* C) { RCache.set_c(C, ps_dev_param_1.x, ps_dev_param_1.y, ps_dev_param_1.z, ps_dev_param_1.w); }
@@ -603,6 +604,21 @@ ssfx_wpn_dof_1;
 }
 ssfx_wpn_dof_2;
 
+
+float ps_r2_img_exposure = 1.0f; // r2-only
+float ps_r2_img_gamma = 1.0f; // r2-only
+float ps_r2_img_saturation = 1.0f; // r2-only
+Fvector ps_r2_img_cg = {.0f, .0f, .0f}; // r2-only
+
+static class pp_image_corrections : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_r2_img_exposure, ps_r2_img_gamma, ps_r2_img_saturation, 1); }
+} pp_image_corrections;
+
+static class pp_color_grading : public R_constant_setup
+{
+    virtual void setup(R_constant* C) { RCache.set_c(C, ps_r2_img_cg.x, ps_r2_img_cg.y, ps_r2_img_cg.z, 1); }
+} pp_color_grading;
 
 
 // Standart constant-binding
@@ -713,7 +729,10 @@ void CBlender_Compile::SetMapping()
     r_Constant("shader_param_6", &dev_param_6);
     r_Constant("shader_param_7", &dev_param_7);
     r_Constant("shader_param_8", &dev_param_8);
-
+    // Image corrections
+    r_Constant("pp_img_corrections", &pp_image_corrections);
+    // Image corrections
+    r_Constant("pp_img_cg", &pp_color_grading);
 
 
     // other common
