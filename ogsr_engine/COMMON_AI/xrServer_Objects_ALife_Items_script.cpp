@@ -46,3 +46,5 @@ void CSE_ALifeItemWeaponShotGun::script_register(lua_State* L) { module(L)[luabi
 void CSE_ALifeItemDetector::script_register(lua_State* L) { module(L)[luabind_class_item1(CSE_ALifeItemDetector, "cse_alife_item_detector", CSE_ALifeItem)]; }
 
 void CSE_ALifeItemArtefact::script_register(lua_State* L) { module(L)[luabind_class_item1(CSE_ALifeItemArtefact, "cse_alife_item_artefact", CSE_ALifeItem)]; }
+
+void CSE_ALifeItemExoskeleton::script_register(lua_State* L) { module(L)[luabind_class_item1(CSE_ALifeItemExoskeleton, "cse_alife_item_exo_outfit", CSE_ALifeItem)]; }

@@ -96,3 +96,43 @@ public:
     CBuyItemCustomDrawCell(LPCSTR str, CGameFont* pFont);
     virtual void OnDraw(CUICellItem* cell);
 };
+
+
+
+#include "CustomExoOutfit.h"
+class CUIExoOutfitCellItem : public CUIInventoryCellItem
+{
+    typedef CUIInventoryCellItem inherited;
+
+public:
+    enum eAddonType
+    {
+        eBattery = 0,
+        eUnloading,
+        eArtefactBeltslot,
+        eMaxAddon
+    };
+    CUIStatic* m_addons[eMaxAddon];
+
+protected:
+    Fvector2 m_addon_offset[eMaxAddon];
+    void CreateIcon(eAddonType, CIconParams& params);
+    void DestroyIcon(eAddonType);
+    CUIStatic* GetIcon(eAddonType);
+    void InitAddon(CUIStatic* s, CIconParams& params, Fvector2 offset, bool b_rotate);
+    void InitAllAddons(CUIStatic* s_battery, bool b_vertical);
+
+    bool is_battery();
+
+
+public:
+    CUIExoOutfitCellItem(CCustomExeskeleton* itm);
+    virtual ~CUIExoOutfitCellItem();
+    virtual void Update();
+    CCustomExeskeleton* object() { return (CCustomExeskeleton*)m_pData; }
+    virtual void OnAfterChild(CUIDragDropListEx* parent_list);
+    CUIDragItem* CreateDragItem();
+    virtual bool EqualTo(CUICellItem* itm);
+    CUIStatic* get_addon_static(u32 idx) { return m_addons[idx]; }
+    Fvector2 get_addon_offset(u32 idx) { return m_addon_offset[idx]; }
+};

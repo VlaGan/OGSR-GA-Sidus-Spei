@@ -42,6 +42,8 @@ void CCustomOutfit::net_Export(CSE_Abstract* E)
     inherited::net_Export(E);
     CSE_ALifeInventoryItem* itm = smart_cast<CSE_ALifeInventoryItem*>(E);
     itm->m_fCondition = m_fCondition;
+    //const auto pA = smart_cast<const CActor*>(H_Parent());
+    //itm->m_attached = (pA && pA->attached(this));TODO
 }
 
 void CCustomOutfit::Load(LPCSTR section)

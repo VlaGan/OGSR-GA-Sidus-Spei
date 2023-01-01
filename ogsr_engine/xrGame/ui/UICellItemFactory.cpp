@@ -12,5 +12,10 @@ CUICellItem* create_cell_item(CInventoryItem* itm)
     if (pWeapon)
         return xr_new<CUIWeaponCellItem>(pWeapon);
 
+    auto pExo = smart_cast<CCustomExeskeleton*> (itm);
+    if (pExo)
+        return xr_new<CUIExoOutfitCellItem>(pExo);
+
+
     return xr_new<CUIInventoryCellItem>(itm);
 }

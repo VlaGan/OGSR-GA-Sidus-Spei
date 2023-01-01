@@ -38,7 +38,7 @@ public:
 
     shared_str m_ActorVisual1;
 
-private:
+//private:
     void OnDropOrMoveToRuck();
 
     HitImmunity::HitTypeSVec m_HitTypeProtection;

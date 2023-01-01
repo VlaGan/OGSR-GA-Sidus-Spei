@@ -343,6 +343,11 @@ void CUICellItem::ColorizeItems(std::initializer_list<CUIDragDropListEx*> args)
             for (auto* Child : WpnCell->m_addons)
                 if (Child)
                     Child->SetTextureColor(Clr);
+
+        if (auto ExoCell = smart_cast<CUIExoOutfitCellItem*>(Itm))
+            for (auto* Child : ExoCell->m_addons)
+                if (Child)
+                    Child->SetTextureColor(Clr);
     };
 
     for (auto* DdListEx : args)
@@ -393,6 +398,8 @@ void CUICellItem::ColorizeItems(std::initializer_list<CUIDragDropListEx*> args)
             ColorizeSects.push_back(Wpn->GetTactHandlerName());
         std::copy(Wpn->m_highlightAddons.begin(), Wpn->m_highlightAddons.end(), std::back_inserter(ColorizeSects));
     };
+
+    //auto ExoOutfitScaner
 
     auto ColorizeAmmoAddons = [&] {
         for (auto* DdListEx : args)

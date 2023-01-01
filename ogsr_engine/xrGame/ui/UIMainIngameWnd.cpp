@@ -670,6 +670,8 @@ void CUIMainIngameWnd::SetPickUpItem(CInventoryItem* PickUpItem)
 #include "../Actor.h"
 
 typedef CUIWeaponCellItem::eAddonType eAddonType;
+typedef CUIExoOutfitCellItem::eAddonType eAddonTypeExo;
+
 
 CUIStatic* init_addon(CUIWeaponCellItem* cell_item, LPCSTR sect, float scale, float scale_x, eAddonType idx)
 {
@@ -688,6 +690,25 @@ CUIStatic* init_addon(CUIWeaponCellItem* cell_item, LPCSTR sect, float scale, fl
 
     return addon;
 }
+
+CUIStatic* init_addon(CUIExoOutfitCellItem* cell_item, LPCSTR sect, float scale, float scale_x, eAddonTypeExo idx)
+{
+    CUIStatic* addon = xr_new<CUIStatic>();
+    addon->SetAutoDelete(true);
+
+    auto pos = cell_item->get_addon_offset(idx);
+    pos.x *= scale * scale_x;
+    pos.y *= scale;
+
+    CIconParams params(sect);
+    Frect rect = params.original_rect();
+    params.set_shader(addon);
+    addon->SetWndRect(pos.x, pos.y, rect.width() * scale * scale_x, rect.height() * scale);
+    addon->SetColor(color_rgba(255, 255, 255, 192));
+
+    return addon;
+}
+
 
 void CUIMainIngameWnd::UpdatePickUpItem()
 {
@@ -747,6 +768,16 @@ void CUIMainIngameWnd::UpdatePickUpItem()
             UIPickUpItemIcon.AttachChild(launcher);
         }
         delete_data(cell_item);
+    }
+
+    if (auto pExo = smart_cast<CCustomExeskeleton*>(m_pPickUpItem))
+    {
+        auto cell_item = xr_new<CUIExoOutfitCellItem>(pExo);
+        if (pExo->IsBatteryAttached())
+        {
+            auto sil = init_addon(cell_item, *pExo->GetBatteryName(), scale, UI()->get_current_kx(), eAddonTypeExo::eBattery);
+            UIPickUpItemIcon.AttachChild(sil);
+        }
     }
 
     // Real Wolf: Колбек для скриптового добавления своих иконок. 10.08.2014.

@@ -843,3 +843,48 @@ void CSE_ALifeItemCustomOutfit::UPDATE_Write(NET_Packet& tNetPacket)
 }
 
 BOOL CSE_ALifeItemCustomOutfit::Net_Relevant() { return (true); }
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// CSE_ALifeItemCustomExoOutfit
+////////////////////////////////////////////////////////////////////////////
+CSE_ALifeItemExoskeleton::CSE_ALifeItemExoskeleton(LPCSTR caSection) : CSE_ALifeItem(caSection) { m_ef_equipment_type = pSettings->r_u32(caSection, "ef_equipment_type"); }
+
+CSE_ALifeItemExoskeleton::~CSE_ALifeItemExoskeleton() {}
+
+u32 CSE_ALifeItemExoskeleton::ef_equipment_type() const { return (m_ef_equipment_type); }
+
+void CSE_ALifeItemExoskeleton::STATE_Read(NET_Packet& tNetPacket, u16 size) { 
+    inherited::STATE_Read(tNetPacket, size);
+    if (m_wVersion > 40)
+        tNetPacket.r_u16(m_exo_addon_flags.flags);
+}
+
+void CSE_ALifeItemExoskeleton::STATE_Write(NET_Packet& tNetPacket) { 
+    inherited::STATE_Write(tNetPacket); 
+
+    tNetPacket.w_u16(m_exo_addon_flags.get());
+}
+
+void CSE_ALifeItemExoskeleton::UPDATE_Read(NET_Packet& tNetPacket)
+{
+    inherited::UPDATE_Read(tNetPacket);
+    tNetPacket.r_float_q8(m_fCondition, 0.0f, 1.0f);
+
+    tNetPacket.r_u16(m_exo_addon_flags.flags);
+}
+
+void CSE_ALifeItemExoskeleton::UPDATE_Write(NET_Packet& tNetPacket)
+{
+    inherited::UPDATE_Write(tNetPacket);
+    tNetPacket.w_float_q8(m_fCondition, 0.0f, 1.0f);
+
+    tNetPacket.w_u16(m_exo_addon_flags.get());
+}
+
+BOOL CSE_ALifeItemExoskeleton::Net_Relevant() { return (true); }

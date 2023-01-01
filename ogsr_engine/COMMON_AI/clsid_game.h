@@ -112,6 +112,10 @@ constexpr auto CLSID_OBJECT_W_TACTHANDLER = MK_CLSID('W', '_', 'T', 'H', 'A', 'N
 
 constexpr auto CLSID_OBJECT_W_FLASHLIGHT = MK_CLSID('D', 'E', 'T', '_', 'F', 'L', 'I', 'T');
 
+constexpr auto CLSID_OBJECT_W_3D_SHELL = MK_CLSID('S', 'W', 'M', '_', 'S', 'H', 'E', 'L');
+constexpr auto CLSID_OBJECT_W_EXO_OUTFIt_SHELL = MK_CLSID('E', 'X', 'O', '_', 'O', 'U', 'T', 'F');
+constexpr auto CLSID_OBJECT_W_BATTERY = MK_CLSID('E', 'X', 'O', '_', 'B', 'A', 'T', 'T');
+
 // Modifiers
 constexpr auto CLSID_OBJECT_M_QDAMAGE = MK_CLSID('O', '_', 'Q', 'D', 'M', 'G', ' ', ' ');
 constexpr auto CLSID_OBJECT_M_IMMORTAL = MK_CLSID('O', '_', 'I', 'M', 'M', 'O', 'R', 'T');

@@ -695,3 +695,219 @@ void CBuyItemCustomDrawCell::OnDraw(CUICellItem* cell)
     m_pFont->Out(pos.x, pos.y, m_string);
     m_pFont->OnRender();
 }
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CUIExoOutfitCellItem::CUIExoOutfitCellItem(CCustomExeskeleton* itm) : inherited(itm)
+{
+    b_auto_drag_childs = false;
+    m_addons[eBattery] = NULL;
+    m_addons[eUnloading] = NULL;
+    m_addons[eArtefactBeltslot] = NULL;
+
+
+    m_cell_size.set(INV_GRID_WIDTHF, INV_GRID_HEIGHTF);
+
+    //if (itm->SilencerAttachable())
+    m_addon_offset[eBattery].set(object()->GetBatteryX(), object()->GetBatteryY());
+
+}
+
+CUIExoOutfitCellItem::~CUIExoOutfitCellItem() {}
+
+bool CUIExoOutfitCellItem::is_battery() { return object()->IsBatteryAttached(); }
+
+void CUIExoOutfitCellItem::CreateIcon(eAddonType t, CIconParams& params)
+{
+    if (GetIcon(t))
+        return;
+    m_addons[t] = xr_new<CUIStatic>();
+    m_addons[t]->SetAutoDelete(true);
+    AttachChild(m_addons[t]);
+    params.set_shader(m_addons[t]);
+}
+
+void CUIExoOutfitCellItem::DestroyIcon(eAddonType t)
+{
+    DetachChild(m_addons[t]);
+    m_addons[t] = NULL;
+}
+
+CUIStatic* CUIExoOutfitCellItem::GetIcon(eAddonType t) { return m_addons[t]; }
+
+void CUIExoOutfitCellItem::Update()
+{
+    bool b = Heading();
+    inherited::Update();
+    bool bForceReInitAddons = (b != Heading());
+
+    //if (object()->SilencerAttachable())
+    {
+        if (object()->IsBatteryAttached())
+        {
+            if (!GetIcon(eBattery) || bForceReInitAddons)
+            {
+                CIconParams params(object()->GetBatteryName());
+                CreateIcon(eBattery, params);
+                InitAddon(GetIcon(eBattery), params, m_addon_offset[eBattery], Heading());
+            }
+        }
+        else
+        {
+            if (m_addons[eBattery])
+                DestroyIcon(eBattery);
+        }
+    }
+
+}
+
+void CUIExoOutfitCellItem::OnAfterChild(CUIDragDropListEx* parent_list)
+{
+    const Ivector2& cs = parent_list->CellSize();
+    m_cell_size.set((float)cs.x, (float)cs.y);
+    CUIStatic* s_battery = is_battery() ? GetIcon(eBattery) : NULL;
+    InitAllAddons(s_battery, parent_list->GetVerticalPlacement());
+}
+
+void CUIExoOutfitCellItem::InitAllAddons(CUIStatic* s_battery, bool b_vertical)
+{
+    CIconParams params;
+
+    if (s_battery)
+    {
+        params.Load(*object()->GetBatteryName());
+        params.set_shader(s_battery);
+        InitAddon(s_battery, params, m_addon_offset[eBattery], b_vertical);
+    }
+
+}
+
+void CUIExoOutfitCellItem::InitAddon(CUIStatic* s, CIconParams& params, Fvector2 addon_offset, bool b_rotate)
+{
+    Fvector2 base_scale;
+    Fvector2 inventory_size;
+    Fvector2 expected_size;
+    static int method = 1;
+
+    inventory_size.x = INV_GRID_WIDTHF * m_grid_size.x;
+    inventory_size.y = INV_GRID_HEIGHTF * m_grid_size.y;
+
+    expected_size.x = m_cell_size.x * m_grid_size.x; // vert: cell_size = 40x50, grid_size = 5x2
+    expected_size.y = m_cell_size.y * m_grid_size.y;
+    if (Heading())
+    { // h = 250, w = 80, i.x = 300, i.y = 100
+        if (1 == method)
+        {
+            expected_size.x = m_cell_size.y * m_grid_size.x;
+            expected_size.y = m_cell_size.x * m_grid_size.y;
+        }
+        if (2 == method)
+        {
+            expected_size.x = m_cell_size.y * m_grid_size.y;
+            expected_size.y = m_cell_size.x * m_grid_size.x;
+        }
+
+        base_scale.x = GetHeight() / inventory_size.x;
+        base_scale.y = GetWidth() / inventory_size.y;
+    }
+    else
+    {
+        base_scale.x = GetWidth() / inventory_size.x;
+        base_scale.y = GetHeight() / inventory_size.y;
+    }
+
+    if (method > 0)
+    {
+        base_scale.x = expected_size.x / inventory_size.x;
+        base_scale.y = expected_size.y / inventory_size.y;
+    }
+
+    Fvector2 cell_size;
+    cell_size.x = params.grid_width * INV_GRID_WIDTHF;
+    cell_size.y = params.grid_height * INV_GRID_HEIGHTF;
+    cell_size.mul(base_scale);
+
+    if (b_rotate)
+    {
+        s->SetWndSize(Fvector2().set(cell_size.y, cell_size.x));
+        Fvector2 new_offset;
+        new_offset.x = addon_offset.y * base_scale.x;
+        new_offset.y = GetHeight() - addon_offset.x * base_scale.x - cell_size.x;
+        addon_offset = new_offset;
+        addon_offset.x *= UI()->get_current_kx();
+    }
+    else
+    {
+        s->SetWndSize(cell_size);
+        addon_offset.mul(base_scale);
+    }
+    s->SetWndPos(addon_offset);
+    s->SetStretchTexture(true);
+
+    s->EnableHeading(b_rotate);
+
+    if (b_rotate)
+    {
+        s->SetHeading(GetHeading());
+        Fvector2 offs;
+        offs.set(0.0f, s->GetWndSize().y);
+        s->SetHeadingPivot(Fvector2().set(0.0f, 0.0f), offs, true);
+    }
+
+    s->SetWindowName("exo_outfit_addon");
+}
+
+CUIDragItem* CUIExoOutfitCellItem::CreateDragItem()
+{
+    CUIDragItem* i = inherited::CreateDragItem();
+
+    CIconParams params;
+
+    CUIStatic* s_silencer = nullptr;
+
+    if (GetIcon(eBattery))
+    {
+        params.Load(object()->GetBatteryName());
+        s_silencer = MakeAddonStatic(i, params);
+    }
+
+
+    if (Heading())
+        m_cell_size.set(m_cell_size.y, m_cell_size.x); // swap before
+    InitAllAddons(s_silencer, false);
+    if (Heading())
+        m_cell_size.set(m_cell_size.y, m_cell_size.x); // swap after
+
+    return i;
+}
+
+bool CUIExoOutfitCellItem::EqualTo(CUICellItem* itm)
+{
+    if (!inherited::EqualTo(itm))
+        return false;
+
+    CUIExoOutfitCellItem* ci = smart_cast<CUIExoOutfitCellItem*>(itm);
+    if (!ci)
+        return false;
+
+    bool b_addons = ((object()->GetAddonsState() == ci->object()->GetAddonsState()));
+    bool b_place = ((object()->m_eItemPlace == ci->object()->m_eItemPlace));
+
+    return b_addons && b_place;
+}

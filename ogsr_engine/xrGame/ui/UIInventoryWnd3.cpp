@@ -35,6 +35,7 @@ void CUIInventoryWnd::EatItem(PIItem itm)
 
 #include "../Medkit.h"
 #include "../Antirad.h"
+#include "../CustomExoOutfit.h"
 void CUIInventoryWnd::ActivatePropertiesBox()
 {
     // Флаг-признак для невлючения пункта контекстного меню: Dreess Outfit, если костюм уже надет
@@ -48,6 +49,7 @@ void CUIInventoryWnd::ActivatePropertiesBox()
     CCustomOutfit* pOutfit = smart_cast<CCustomOutfit*>(CurrentIItem());
     CWeapon* pWeapon = smart_cast<CWeapon*>(CurrentIItem());
     CBottleItem* pBottleItem = smart_cast<CBottleItem*>(CurrentIItem());
+    auto pExo = smart_cast<CCustomExeskeleton*>(CurrentIItem());
 
     bool b_show = false;
 
@@ -102,6 +104,14 @@ void CUIInventoryWnd::ActivatePropertiesBox()
         b_show = true;
     }
 
+    if (pExo)
+    {
+        if (pExo->IsBatteryAttached())
+        {
+            UIPropertiesBox.AddItem("st_detach_exobattery", NULL, INVENTORY_DETACH_EXOBATTERY_ADDON);
+            b_show = true;
+        }
+    }
     //отсоединение аддонов от вещи
     if (pWeapon)
     {
@@ -304,6 +314,9 @@ void CUIInventoryWnd::ProcessPropertiesBoxClicked()
         case INVENTORY_DETACH_LASER_ADDON: DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetLaserName()); break;
         case INVENTORY_DETACH_TORCH_ADDON: DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetTorchName()); break;
         case INVENTORY_DETACH_TACTHANDLER_ADDON: DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetTactHandlerName()); break;
+
+        case INVENTORY_DETACH_EXOBATTERY_ADDON: DetachAddon(*(smart_cast<CCustomExeskeleton*>(CurrentIItem()))->GetBatteryName()); break;
+
         case INVENTORY_RELOAD_MAGAZINE: (smart_cast<CWeapon*>(CurrentIItem()))->Action(kWPN_RELOAD, CMD_START); break;
         case INVENTORY_UNLOAD_MAGAZINE: {
             auto ProcessUnload = [](void* pWpn) {

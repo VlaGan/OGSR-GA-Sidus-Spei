@@ -160,6 +160,9 @@
 #include "inventoryContainer.h"
 
 #include "Flashlight.h"
+#include "customshell.h"
+
+#include "CustomExoOutfit.cpp"
 
 #define ADD(a, b, c, d) add<a, b>(c, d)
 
@@ -277,6 +280,10 @@ void CObjectFactory::register_classes()
     ADD(CTactHandler, CSE_ALifeItem, CLSID_OBJECT_W_TACTHANDLER, "wpn_tact_handler");
 
     ADD(CFlashlight, CSE_ALifeItem, CLSID_OBJECT_W_FLASHLIGHT, "detector_flashlight");
+
+    ADD(CCustomShell, CSE_ALifeItem, CLSID_OBJECT_W_3D_SHELL, "swm_3d_shell");
+    ADD(CExoBattery, CSE_ALifeItem, CLSID_OBJECT_W_BATTERY, "exo_battery");
+    ADD(CCustomExeskeleton, CSE_ALifeItemExoskeleton, CLSID_OBJECT_W_EXO_OUTFIt_SHELL, "exo_outfit");
 
     // Inventory
     ADD(CBolt, CSE_ALifeItemBolt, CLSID_IITEM_BOLT, "obj_bolt");

@@ -304,6 +304,29 @@ public:
     };
 };
 
+
+
+    SERVER_ENTITY_DECLARE_BEGIN(CSE_ALifeItemExoskeleton, CSE_ALifeItem) u32 m_ef_equipment_type;
+CSE_ALifeItemExoskeleton(LPCSTR caSection);
+virtual ~CSE_ALifeItemExoskeleton();
+virtual u32 ef_equipment_type() const;
+virtual BOOL Net_Relevant();
+
+enum EExoOutfitAddonState
+{
+    eExoBatteryAttached = (1 << 0),
+    eExoUnloadingAttached = (1 << 1),
+    eExoArtefactBeltAttached = (1 << 2)
+};
+Flags16 m_exo_addon_flags;
+
+
+SERVER_ENTITY_DECLARE_END
+add_to_type_list(CSE_ALifeItemExoskeleton)
+#define script_type_list save_type_list(CSE_ALifeItemExoskeleton)
+
+
+
 // KRodin: Закомментировал, попытка предотвратить повторную регистрацию cse_alife_item в луабинде.
 // По идее, оно и не нужно, ведь у класса CSE_InventoryContainer нету метода ::script_register()
 // add_to_type_list(CSE_InventoryContainer)

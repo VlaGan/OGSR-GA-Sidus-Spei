@@ -28,6 +28,8 @@
 #include "../BottleItem.h"
 #include "../xr_3da/xr_input.h"
 
+#include "CustomExoOutfit.h"
+
 #define CAR_BODY_XML "carbody_new.xml"
 #define CARBODY_ITEM_XML "carbody_item.xml"
 
@@ -386,6 +388,14 @@ void CUICarBodyWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
                 PlaySnd(eInvDetachAddon);
             }
             break;
+
+            case INVENTORY_DETACH_EXOBATTERY_ADDON: {
+                auto exo = smart_cast<CCustomExeskeleton*>(CurrentIItem());
+                exo->Detach(exo->GetBatteryName().c_str(), true);
+                PlaySnd(eInvDetachAddon);
+            }
+            break;
+
             case INVENTORY_MOVE_ACTION: {
                 void* d = m_pUIPropertiesBox->GetClickedItem()->GetData();
                 bool b_all = (d == (void*)33);
@@ -415,6 +425,7 @@ void CUICarBodyWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
             case INVENTORY_DETACH_LASER_ADDON:
             case INVENTORY_DETACH_TORCH_ADDON:
             case INVENTORY_DETACH_TACTHANDLER_ADDON:
+            case INVENTORY_DETACH_EXOBATTERY_ADDON:
             case INVENTORY_DETACH_SILENCER_ADDON:
             case INVENTORY_DETACH_GRENADE_LAUNCHER_ADDON: {
                 if (m_pInventoryBox)
@@ -724,6 +735,12 @@ void CUICarBodyWnd::ActivatePropertiesBox()
     bool b_show = false;
 
     LPCSTR _action = NULL;
+
+    if (auto pExo = smart_cast<CCustomExeskeleton*>(CurrentIItem()))
+    {
+        m_pUIPropertiesBox->AddItem("st_detach_exobattery", NULL, INVENTORY_DETACH_EXOBATTERY_ADDON);
+        b_show = true;
+    }
 
     if (pWeapon)
     {
