@@ -687,9 +687,29 @@ void CKinematicsAnimated::Load(const char* N, IReader* data, u32 dwFlags)
         LPCSTR nm, val;
         for (u32 i = 0; pUserData->r_line("omf_override", i, &nm, &val); ++i)
         {
-            xr_string s = nm;
-            s += ".omf";
-            omfs.push_back(s);
+            if (strstr(nm, "*.omf"))
+            {
+                FS_FileSet fset;
+
+                FS.file_list(fset, "$game_meshes$", FS_ListFiles, nm);
+                //FS.file_list(fset, "$level$", FS_ListFiles, nm); 
+
+                omfs.reserve(omfs.size() + fset.size() - 1);
+
+                for (FS_FileSet::iterator it = fset.begin(); it != fset.end(); it++)
+                {
+                    omfs.push_back((*it).name.c_str());
+                }
+            }
+            else
+            {
+                xr_string s = nm;
+                if (!strext(nm))
+                {
+                    s += ".omf";
+                }
+                omfs.push_back(s);
+            }
         }
     }
     else if (data->find_chunk(OGF_S_MOTION_REFS))
@@ -707,13 +727,35 @@ void CKinematicsAnimated::Load(const char* N, IReader* data, u32 dwFlags)
     }
     else if (data->find_chunk(OGF_S_MOTION_REFS2))
     {
+        string_path nm;
+
         u32 set_cnt = data->r_u32();
         for (u32 k = 0; k < set_cnt; ++k)
         {
-            string_path nm;
             data->r_stringZ(nm, sizeof(nm));
-            xr_strcat(nm, ".omf");
-            omfs.push_back(nm);
+
+            if (strstr(nm, "*.omf"))
+            {
+                FS_FileSet fset;
+
+                FS.file_list(fset, "$game_meshes$", FS_ListFiles, nm);
+                //FS.file_list(fset, "$level$", FS_ListFiles, nm);
+
+                omfs.reserve(omfs.size() + fset.size() - 1);
+
+                for (FS_FileSet::iterator it = fset.begin(); it != fset.end(); it++)
+                {
+                    omfs.push_back((*it).name.c_str());
+                }
+            }
+            else
+            {
+                if (!strext(nm))
+                {
+                    xr_strcat(nm, ".omf");
+                }
+                omfs.push_back(nm);
+            }
         }
     }
 
