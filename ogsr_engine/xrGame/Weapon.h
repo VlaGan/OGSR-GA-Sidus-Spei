@@ -13,6 +13,12 @@
 #include "xrServer_Objects_ALife_Items.h"
 #include "actor.h"
 #include "firedeps.h"
+#include "Missile.h"
+#include "bolt.h"
+
+#include "ShellLauncher.h"
+
+class CBolt;
 
 // refs
 class CEntity;
@@ -26,7 +32,9 @@ class CUIStaticItem;
 constexpr float def_min_zoom_k = 0.3f;
 constexpr float def_zoom_step_count = 4.0f;
 
-class CWeapon : public CHudItemObject, public CShootingObject
+#define WEAPON_ANIM_SHELL_SHOW_TIME 400 // Время (в м\сек), в течении которого показываем анимированную гильзу
+
+class CWeapon : public CHudItemObject, public CShootingObject, public CShellLauncher
 {
     friend class CWeaponScript;
 
@@ -339,7 +347,7 @@ public:
     IC float GetZoomFactor() const { return m_fZoomFactor; }
     virtual float CurrentZoomFactor();
     //показывает, что оружие находится в соостоянии поворота для приближенного прицеливания
-    bool IsRotatingToZoom() const { return (m_fZoomRotationFactor < 1.f); }
+    bool IsRotatingToZoom() const { return (m_fZoomRotationFactor < 1.f) && (m_fZoomRotationFactor > 0.f); }
     bool IsRotatingFromZoom() const { return m_fZoomRotationFactor > 0.f; }
 
     virtual float Weight() const;
@@ -728,8 +736,70 @@ public:
     void SaveAttachableParams() override;
     void ParseCurrentItem(CGameFont* F) override;
 
-/* public:
-    bool standart_scope{true};
-    void ChangeScopeVision();*/
+
     shared_str SectionName;
+
+
+    //---------------- 3Д гильзы ------------------//
+    //bool m_sUse3DShells{}, m_sShellDropOnReload{};
+    //float m_sShellDropTime{};
+
+
+    shared_str m_sShellHudVisual, m_sShell3DSect;
+    bool bUse3DShell{};
+
+    u32 m_dwShowAnimatedShellVisual;//--> Время в dwTimeGlobal (м\сек), в течении которого гарантировано отображаем
+                                     //    анимированную гильзу
+
+    shared_str m_sAnimatedShellHUDVisSect; //--> Визуал-секция анимированной худовой гильзы
+    shared_str m_sCurAnimatedShellHudVisual; //--> Путь к текущему визуалу анимированной худовой гильзы от последнего выстрела
+
+    shared_str m_sAnimatedShellLastBulletHUDVisSect; //--> Визуал-секция анимированной худовой гильзы от выстрела последнего патрона (Protecta)
+    bool m_bCanShowLastBulletShell; //--> Можем-ли мы показывать гильзу после выстрела последнего патрона в стволе (Protecta)
+
+    bool m_bDontSpawnShell3DForFirstBullet; //--> Флаг, блокирующий спавн 3D-гильзы если был выстрелен первый патрон из полного магазина
+    bool m_bDontSpawnShell3DForLastBullet; //--> Флаг, блокирующий спавн 3D-гильзы если был выстрелен последний патрон в стволе
+    shared_str m_sCurShell3DSect; //--> Текущая секция объекта 3D-гильзы от последнего выстрела
+
+    xr_deque<u32> m_Shells3DQueue; //--> Очередь отложенного спавна 3D-гильз (хранит dwTimeGlobal когда нужно заспавнить гильзу)
+
+    // Можно-ли в данный момент запускать анимированные 3D-гильзы
+    bool CanPlay3DShellAnim() const
+    {
+        if (!(CShellLauncher::CanPlay3DShellAnim()))
+            return false;
+
+        switch (GetState())
+        {
+        case eIdle:
+        case eFire:
+        case eFire2:
+        case eMisfire:
+        case eMagEmpty: {
+            return true;
+        }
+        }
+
+        return false; //--> Гильза будет выкинута сразу
+    }
+
+
+    IC void UpdShellShowTimer() { m_dwShowAnimatedShellVisual = Device.dwTimeGlobal + WEAPON_ANIM_SHELL_SHOW_TIME; }
+
+    void UpdateLastBulletInfo()
+    {
+        m_sCurAnimatedShellHudVisual = m_sShellHudVisual;
+        m_sCurShell3DSect = m_sShell3DSect;
+
+        if (GetAmmoElapsed() <= 1)
+        { //--> Стреляем последний патрон из основного ствола
+            m_bCanShowLastBulletShell = true;
+        }
+    }
+    bool m_sRegister3DShell{};
+
+    virtual void UpdateAnimatedShellVisual();
+    virtual void Update3DShellTransform() { UpdateFireDependencies_internal(); };
+
 };
+

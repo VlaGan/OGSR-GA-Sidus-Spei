@@ -1,4 +1,4 @@
-﻿// Weapon.cpp: implementation of the CWeapon class.
+// Weapon.cpp: implementation of the CWeapon class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
@@ -29,6 +29,8 @@
 #include "GamePersistent.h"
 #include "../xr_3da/x_ray.h"
 
+#include "ShellLauncher.cpp"
+
 #define ROTATION_TIME 0.3f
 
 extern ENGINE_API Fvector4 w_states;
@@ -42,7 +44,7 @@ extern bool IsAltScope;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CWeapon::CWeapon(LPCSTR name)
+CWeapon::CWeapon(LPCSTR name) :CShellLauncher(this)
 {
     SetState(eHidden);
     SetNextState(eHidden);
@@ -177,8 +179,20 @@ void CWeapon::UpdateFireDependencies_internal()
 
         if (GetHUDmode())
         {
+            
             HudItemData()->setup_firedeps(m_current_firedeps);
             VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
+
+            // 3D-Shells
+            if (m_sShell3DSect != nullptr)
+            {
+                Fmatrix parent;//= XFORM();
+                parent.set(m_current_firedeps.m_FireParticlesXForm);
+                parent.c.set(m_current_firedeps.vLastSP);
+                //parent.rotateY(90.f);
+                RebuildLaunchParams(parent, HudItemData()->m_model, true); // Hud
+            }
+
         }
         else
         {
@@ -198,6 +212,10 @@ void CWeapon::UpdateFireDependencies_internal()
 
             m_current_firedeps.m_FireParticlesXForm.set(parent);
             VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
+
+            // 3D-Shells
+            if (m_sShell3DSect != nullptr)
+                CShellLauncher::RebuildLaunchParams(parent, Visual()->dcast_PKinematics(), false); // World
         }
     }
 }
@@ -227,8 +245,6 @@ constexpr const char* wpn_scope_def_bone = "wpn_scope";
 constexpr const char* wpn_silencer_def_bone = "wpn_silencer";
 constexpr const char* wpn_launcher_def_bone_shoc = "wpn_launcher";
 constexpr const char* wpn_launcher_def_bone_cop = "wpn_grenade_launcher";
-
-//constexpr const char* wpn_bayonet_bone = "wpn_bayonet";
 
 void CWeapon::Load(LPCSTR section)
 {
@@ -673,6 +689,15 @@ void CWeapon::Load(LPCSTR section)
     }
 
     NeedRail = READ_IF_EXISTS(pSettings, r_bool, section, "need_laser_torch_rail", false);
+
+
+    m_sShell3DSect = READ_IF_EXISTS(pSettings, r_string, section, "shell_3d_sect", nullptr); //--#SM+#--
+    m_sShellHudVisual = READ_IF_EXISTS(pSettings, r_string, section, "shell_hud", nullptr); //--#SM+#--
+
+    bUse3DShell = m_sShell3DSect != nullptr;
+    
+    if (m_sShell3DSect!=nullptr)
+        ReLoadLaunchPoints(section, hud_sect);
 }
 
 void CWeapon::LoadFireParams(LPCSTR section, LPCSTR prefix)
@@ -828,6 +853,18 @@ void CWeapon::OnEvent(NET_Packet& P, u16 type)
         OnStateSwitch(u32(state), GetState());
     }
     break;
+    
+    // SWM 3D SHELLS
+     case GE_OWNERSHIP_TAKE : // <!> Bullet shells, rockets\grenades
+    {
+        u16 id;
+        P.r_u16(id);
+        CShellLauncher::RegisterShell(id, this);
+
+        //-- VlaGan: шоб не вылетал CCustomRocket при аттаче гильзы
+        m_sRegister3DShell = false;
+    }
+    break;
     default: {
         inherited::OnEvent(P, type);
     }
@@ -970,7 +1007,7 @@ void CWeapon::UpdateCL()
     //нарисовать партиклы
     UpdateFlameParticles();
     UpdateFlameParticles2();
-
+    
     VERIFY(smart_cast<IKinematics*>(Visual()));
 
     if (GetState() == eIdle)
@@ -980,13 +1017,17 @@ void CWeapon::UpdateCL()
         {
             m_idle_state = state;
             if (GetNextState() != eMagEmpty && GetNextState() != eReload)
-            {
                 SwitchState(eIdle);
-            }
         }
     }
     else
         m_idle_state = eIdle;
+
+    /* Обновляем отрисовку гильзы
+    UpdateAnimatedShellVisual();
+
+    if (GetState() == eFire)
+        UpdShellShowTimer();*/
 
     UpdateTacthandler();
     UpdateLaser();
@@ -1974,11 +2015,6 @@ void CWeapon::OnZoomIn()
 {
     m_bZoomMode = true;
 
-
-    //TODO::фекскоп
-  /// bool IsScope;
-   // if ()
-     //   ALife::EWeaponAddonStatus
     shared_str fakescop_dir = m_eScopeStatus == ALife::eAddonAttachable ? GetScopeName(): SectionName;
     if (!SecondVPEnabled() && IsScopeAttached())
         if (READ_IF_EXISTS(pSettings, r_string, fakescop_dir, "scope_texture", "") != "")
@@ -2040,12 +2076,12 @@ void CWeapon::OnZoomOut()
 
 bool CWeapon::UseScopeTexture()
 {
-    return !SecondVPEnabled() && m_UIScope; // только если есть текстура прицела - для простого создания коллиматоров
+    return !SecondVPEnabled() && m_UIScope && !m_fAltScopeActive; // только если есть текстура прицела - для простого создания коллиматоров
 }
 
 CUIWindow* CWeapon::ZoomTexture()
 {
-    if (UseScopeTexture() && !m_fAltScopeActive)
+    if (UseScopeTexture())
         return m_UIScope;
     else
     {
@@ -2571,12 +2607,46 @@ void CWeapon::SaveAttachableParams()
 
 void CWeapon::ParseCurrentItem(CGameFont* F) { F->OutNext("WEAPON IN STRAPPED MODE: [%d]", m_strapped_mode); }
 
-/*
-void CWeapon::ChangeScopeVision() { 
-    if (!m_second_scope_enable)
-        return;
 
-    is_second_scope = true ? !is_second_scope : false;
-    standart_scope = !is_second_scope;
+void CWeapon::UpdateAnimatedShellVisual()
+{
+    //if (!GetHUDmode())
+    //    return;
+    /*
+    attachable_hud_item* hud_item = HudItemData();
+    if (hud_item != NULL)
+    {
+        // Гильза после каждого выстрела (быстро исчезает)
+        if (m_sAnimatedShellHUDVisSect != NULL)
+        {
+            bool bVisible = (m_dwShowAnimatedShellVisual >= Device.dwTimeGlobal && GetState() != eReload);
+
+            //--> Отображаем\скрываем гильзу
+            hud_item->UpdateChildrenList(m_sAnimatedShellHUDVisSect, bVisible);
+
+            //--> Обновляем её визуал
+            attachable_hud_item* shell_item = hud_item->FindChildren(CWeapon::m_sAnimatedShellHUDVisSect);
+            if (shell_item != NULL)
+                shell_item->UpdateVisual(m_sCurAnimatedShellHudVisual);
+        }
+
+        // Гильза от последнего выстрела (Protecta, висит до первого патрона в стволе)
+        if (GetAmmoElapsed() > 0)
+        {
+            m_bCanShowLastBulletShell = false;
+        }
+
+        if (m_sAnimatedShellLastBulletHUDVisSect != NULL)
+        {
+            bool bVisible = m_bCanShowLastBulletShell;
+
+            //--> Отображаем\скрываем гильзу
+            hud_item->UpdateChildrenList(m_sAnimatedShellLastBulletHUDVisSect, bVisible);
+
+            //--> Обновляем её визуал
+            attachable_hud_item* shell_item = hud_item->FindChildren(m_sAnimatedShellLastBulletHUDVisSect);
+            if (shell_item != NULL)
+                shell_item->UpdateVisual(m_sCurAnimatedShellHudVisual);
+        }
+    }*/
 }
-*/

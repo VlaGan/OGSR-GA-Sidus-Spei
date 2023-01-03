@@ -411,13 +411,16 @@ void CWeaponMagazinedWGrenade::SwitchState(u32 S)
 
 void CWeaponMagazinedWGrenade::OnEvent(NET_Packet& P, u16 type)
 {
-    inherited::OnEvent(P, type);
+    //inherited::OnEvent(P, type);
     u16 id;
     switch (type)
     {
     case GE_OWNERSHIP_TAKE: {
-        P.r_u16(id);
-        CRocketLauncher::AttachRocket(id, this);
+        if (!m_sRegister3DShell && IsGrenadeMode())
+        {
+            P.r_u16(id);
+            CRocketLauncher::AttachRocket(id, this);
+        }
     }
     break;
     case GE_OWNERSHIP_REJECT:
@@ -428,6 +431,7 @@ void CWeaponMagazinedWGrenade::OnEvent(NET_Packet& P, u16 type)
         break;
     }
     }
+    inherited::OnEvent(P, type);
 }
 
 void CWeaponMagazinedWGrenade::ReloadMagazine()

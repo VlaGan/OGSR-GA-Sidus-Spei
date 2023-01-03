@@ -846,6 +846,18 @@ void CWeaponMagazined::OnShot()
     PHGetLinearVell(vel);
     OnShellDrop(get_LastSP(), vel);
 
+
+
+    // 3D Shells
+    if (!IsGrenadeMode() && m_sShell3DSect != nullptr)
+    {
+        m_sRegister3DShell = true;
+        LaunchShell3D(1,  m_sShell3DSect.c_str());
+
+    }
+
+    UpdateAnimatedShellVisual();
+
     // Огонь из ствола
     StartFlameParticles();
 
