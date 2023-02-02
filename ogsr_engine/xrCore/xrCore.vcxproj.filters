@@ -382,6 +382,9 @@
     <ClInclude Include="trivial_encryptor.h">
       <Filter>FS</Filter>
     </ClInclude>
+    <ClInclude Include="_detail_collusion_point.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="FileSystem.h">

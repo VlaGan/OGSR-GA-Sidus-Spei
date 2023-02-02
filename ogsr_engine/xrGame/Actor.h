@@ -132,6 +132,9 @@ public:
     // Имеется ли воздействие пси-ауры на ГГ (тряска рук)
     bool PsyAuraAffect{};
 
+
+    float fFPCamYawMagnitude{};
+
     /////////////////////////////////////////////////////////////////
     // Inventory Owner
 
@@ -795,6 +798,7 @@ public:
     bool m_fIsSetedActorCrouch{};
 
     void UpdateBodyHealth();
+    void UpdateDetailCollisionPoints();
 
 private:
     float m_fHeadHealth{1.f};

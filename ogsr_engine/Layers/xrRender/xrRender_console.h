@@ -1,4 +1,5 @@
 #pragma once
+#include <_detail_collusion_point.h>
 
 // Common
 extern ECORE_API u32 r2_SmapSize;
@@ -34,6 +35,11 @@ extern ECORE_API int ps_r__LightSleepFrames;
 extern ECORE_API float ps_r__Detail_l_ambient;
 extern ECORE_API float ps_r__Detail_l_aniso;
 extern ECORE_API float ps_r__Detail_density;
+extern ECORE_API float ps_detail_collision_dist;
+extern ECORE_API float ps_detail_collision_time;
+extern ECORE_API Fvector ps_detail_collision_angle;
+extern ECORE_API float ps_detail_enable_collision;
+extern ECORE_API xr_vector<DetailCollusionPoint> level_detailcoll_points;
 
 extern ECORE_API float ps_r2_mask_control;
 

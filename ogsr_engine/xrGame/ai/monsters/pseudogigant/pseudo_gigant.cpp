@@ -218,8 +218,18 @@ void CPseudoGigant::on_activate_control(ControlCom::EControlType type)
     }
 }
 
+
+#include <_detail_collusion_point.h>
+extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
+extern float ps_detail_enable_collision;
+
 void CPseudoGigant::on_threaten_execute()
 {
+    if (ps_detail_enable_collision)
+        //-- VlaGan: для псевдыча ID зеркальный, чтобы он не влиял на траву под ид точки удара
+        //-- для гранат и взрывного легче, ведь они по задумке не коллизируют и можно спокойно брать их ид
+        level_detailcoll_points.push_back(DetailCollusionPoint(Position(), -ID(), 15.f, 0.3f, 1.5f, true));
+
     // разбросить объекты
     m_nearest.clear();
     Level().ObjectSpace.GetNearest(m_nearest, Position(), 15.f, NULL);

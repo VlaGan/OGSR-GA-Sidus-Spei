@@ -312,6 +312,11 @@ float CExplosive::TestPassEffect(const	Fvector	&source_p,	const	Fvector	&dir,flo
 	else return dist_factor;
 	return shoot_factor*dist_factor;
 }
+
+#include <_detail_collusion_point.h>
+extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
+extern float ps_detail_enable_collision;
+
 void CExplosive::Explode()
 {
 	VERIFY(0xffff != Initiator());
@@ -323,6 +328,12 @@ void CExplosive::Explode()
 
 	Fvector& pos = m_vExplodePos;
 	Fvector& dir = m_vExplodeDir;
+
+	//-- VlaGan: мне лень прописывать для каждого отдельно, поэтому затычка для актора (u32)-2, ибо у него ид - 0 и для нпс, мобов -ид
+	if (ps_detail_enable_collision)
+        level_detailcoll_points.push_back(
+            DetailCollusionPoint(m_vExplodePos, m_iCurrentParentID != g_actor->ID() ? -m_iCurrentParentID : (u32)-2, m_fBlastRadius, 0.3f, 1.5f, true));
+
 #ifdef DEBUG
 	if(ph_dbg_draw_mask.test(phDbgDrawExplosions))
 	{
@@ -562,7 +573,7 @@ void CExplosive::OnEvent(NET_Packet& P, u16 type)
 			P.r_u16(parent_id);
 			P.r_vec3(pos);
 			P.r_vec3(normal);
-			
+	
 			SetInitiator(parent_id);
 			ExplodeParams(pos,normal);
 			Explode();
