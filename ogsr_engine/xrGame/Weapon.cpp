@@ -85,6 +85,8 @@ CWeapon::CWeapon(LPCSTR name) :CShellLauncher(this)
     m_ef_weapon_type = u32(-1);
     m_UIScope = nullptr;
     m_set_next_ammoType_on_reload = u32(-1);
+
+    m_sCurShell3DSect = nullptr;
 }
 extern int scope_2dtexactive;
 CWeapon::~CWeapon()
@@ -179,20 +181,13 @@ void CWeapon::UpdateFireDependencies_internal()
 
         if (GetHUDmode())
         {
-            
             HudItemData()->setup_firedeps(m_current_firedeps);
             VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
 
-            // 3D-Shells
-            if (m_sShell3DSect != nullptr)
-            {
-                Fmatrix parent;//= XFORM();
-                parent.set(m_current_firedeps.m_FireParticlesXForm);
-                parent.c.set(m_current_firedeps.vLastSP);
-                //parent.rotateY(90.f);
-                RebuildLaunchParams(parent, HudItemData()->m_model, true); // Hud
-            }
-
+            // 3D-Shells for Hud
+            Fmatrix item_trans = HudItemData()->m_item_transform;
+            item_trans.c.add(Device.vCameraPosition);
+            RebuildLaunchParams(item_trans, HudItemData()->m_model, true); // Hud
         }
         else
         {
@@ -214,8 +209,7 @@ void CWeapon::UpdateFireDependencies_internal()
             VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
 
             // 3D-Shells
-            if (m_sShell3DSect != nullptr)
-                CShellLauncher::RebuildLaunchParams(parent, Visual()->dcast_PKinematics(), false); // World
+            RebuildLaunchParams(parent, Visual()->dcast_PKinematics(), false); // World
         }
     }
 }
@@ -256,9 +250,6 @@ void CWeapon::Load(LPCSTR section)
 
     if (!m_bForcedParticlesHudMode)
         m_bParticlesHudMode = !!pSettings->line_exist(hud_sect, "item_visual");
-
-
-    SectionName = static_cast<shared_str>(section);
 
 #ifdef DEBUG
     {
@@ -690,14 +681,12 @@ void CWeapon::Load(LPCSTR section)
 
     NeedRail = READ_IF_EXISTS(pSettings, r_bool, section, "need_laser_torch_rail", false);
 
+    //-- таймаут на дроп 3д шела
+    bDropShellOnReload = READ_IF_EXISTS(pSettings, r_bool, section, "shell3d_drop_on_reload", false);
+    iShellCntPerShoot = READ_IF_EXISTS(pSettings, r_float, section, "shell3d_cnt_per_shoot", 1); //-- не помню зачем делал это
+    fShellLaunchTimeout = READ_IF_EXISTS(pSettings, r_float, section, "shell3d_timeout", 0.f);
 
-    m_sShell3DSect = READ_IF_EXISTS(pSettings, r_string, section, "shell_3d_sect", nullptr); //--#SM+#--
-    m_sShellHudVisual = READ_IF_EXISTS(pSettings, r_string, section, "shell_hud", nullptr); //--#SM+#--
-
-    bUse3DShell = m_sShell3DSect != nullptr;
-    
-    if (m_sShell3DSect!=nullptr)
-        ReLoadLaunchPoints(section, hud_sect);
+    ReLoadLaunchPoints(section, hud_sect);
 }
 
 void CWeapon::LoadFireParams(LPCSTR section, LPCSTR prefix)
@@ -853,16 +842,11 @@ void CWeapon::OnEvent(NET_Packet& P, u16 type)
         OnStateSwitch(u32(state), GetState());
     }
     break;
-    
-    // SWM 3D SHELLS
-     case GE_OWNERSHIP_TAKE : // <!> Bullet shells, rockets\grenades
+    case GE_OWNERSHIP_TAKE :
     {
         u16 id;
         P.r_u16(id);
         CShellLauncher::RegisterShell(id, this);
-
-        //-- VlaGan: шоб не вылетал CCustomRocket при аттаче гильзы
-        m_sRegister3DShell = false;
     }
     break;
     default: {
@@ -1022,12 +1006,6 @@ void CWeapon::UpdateCL()
     }
     else
         m_idle_state = eIdle;
-
-    /* Обновляем отрисовку гильзы
-    UpdateAnimatedShellVisual();
-
-    if (GetState() == eFire)
-        UpdShellShowTimer();*/
 
     UpdateTacthandler();
     UpdateLaser();
@@ -2015,7 +1993,8 @@ void CWeapon::OnZoomIn()
 {
     m_bZoomMode = true;
 
-    shared_str fakescop_dir = m_eScopeStatus == ALife::eAddonAttachable ? GetScopeName(): SectionName;
+    shared_str fakescop_dir = m_eScopeStatus == ALife::eAddonAttachable ? GetScopeName() : this->cNameSect();
+    //SectionName;
     if (!SecondVPEnabled() && IsScopeAttached())
         if (READ_IF_EXISTS(pSettings, r_string, fakescop_dir, "scope_texture", "") != "")
             scope_radius = READ_IF_EXISTS(pSettings, r_float, fakescop_dir, "fakescope_radius", 0.f);
@@ -2606,47 +2585,3 @@ void CWeapon::SaveAttachableParams()
 }
 
 void CWeapon::ParseCurrentItem(CGameFont* F) { F->OutNext("WEAPON IN STRAPPED MODE: [%d]", m_strapped_mode); }
-
-
-void CWeapon::UpdateAnimatedShellVisual()
-{
-    //if (!GetHUDmode())
-    //    return;
-    /*
-    attachable_hud_item* hud_item = HudItemData();
-    if (hud_item != NULL)
-    {
-        // Гильза после каждого выстрела (быстро исчезает)
-        if (m_sAnimatedShellHUDVisSect != NULL)
-        {
-            bool bVisible = (m_dwShowAnimatedShellVisual >= Device.dwTimeGlobal && GetState() != eReload);
-
-            //--> Отображаем\скрываем гильзу
-            hud_item->UpdateChildrenList(m_sAnimatedShellHUDVisSect, bVisible);
-
-            //--> Обновляем её визуал
-            attachable_hud_item* shell_item = hud_item->FindChildren(CWeapon::m_sAnimatedShellHUDVisSect);
-            if (shell_item != NULL)
-                shell_item->UpdateVisual(m_sCurAnimatedShellHudVisual);
-        }
-
-        // Гильза от последнего выстрела (Protecta, висит до первого патрона в стволе)
-        if (GetAmmoElapsed() > 0)
-        {
-            m_bCanShowLastBulletShell = false;
-        }
-
-        if (m_sAnimatedShellLastBulletHUDVisSect != NULL)
-        {
-            bool bVisible = m_bCanShowLastBulletShell;
-
-            //--> Отображаем\скрываем гильзу
-            hud_item->UpdateChildrenList(m_sAnimatedShellLastBulletHUDVisSect, bVisible);
-
-            //--> Обновляем её визуал
-            attachable_hud_item* shell_item = hud_item->FindChildren(m_sAnimatedShellLastBulletHUDVisSect);
-            if (shell_item != NULL)
-                shell_item->UpdateVisual(m_sCurAnimatedShellHudVisual);
-        }
-    }*/
-}

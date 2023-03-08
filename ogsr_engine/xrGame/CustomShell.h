@@ -1,11 +1,8 @@
+#pragma once
 /*******************************/
 /********** 3D-Гильзы **********/ //--#SM+#--
 /*******************************/
-
-#pragma once
-
 #include "physic_item.h"
-//#include "xrPhysics/PHUpdateObject.h"
 
 class CShellLauncher;
 struct CShellLauncher::launch_points;
@@ -48,7 +45,6 @@ private:
 
 protected:
     virtual void renderable_Render();
-    virtual void OnRenderHUD(CGameObject* pCurViewEntity);
 
 public:
 
@@ -57,7 +53,7 @@ private:
     u32 dwHUDMode_upd_frame;
 
 protected:
-            void prepare_physic_shell();
+    void prepare_physic_shell();
     virtual void setup_physic_shell();
     virtual void activate_physic_shell();
 
@@ -75,23 +71,19 @@ public:
 private:
 
 protected:
-    u32 m_dwRegisterTime;
-    u32 m_dwDestroyTime;
+    u32 m_dwDestroyTime{};
     u32 m_dwDestroyOnCollideSafetime;
     u32 m_dwDropOnFrameAfter;
-    u32 m_dwFOVStableTime;
-    u32 m_dwFOVTranslateTime;
     u32 m_launch_point_idx;
     bool m_bHUD_mode;
 
     bool m_bSndWasPlayed;
     ref_sound m_pShellHitSnd;
-    shared_str m_sShellHitSndList;
+    shared_str m_sShellHitSndList, m_sShellHitSndListGrass;
     float m_fSndVolume;
     Fvector2 m_fSndRndFreq;
     Fvector2 m_vSndRange;
 
-    void UpdateShellAnimated();
     void UpdateShellHUDMode();
 
 public:

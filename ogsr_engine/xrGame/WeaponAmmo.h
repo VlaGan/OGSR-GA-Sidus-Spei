@@ -29,6 +29,8 @@ public:
 
     shared_str m_InvShortName;
     RStringVec m_ExplodeParticles;
+
+    shared_str m_3dShellSection;
 };
 
 class CWeaponAmmo : public CInventoryItemObject

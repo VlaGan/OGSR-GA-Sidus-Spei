@@ -736,69 +736,21 @@ public:
     void SaveAttachableParams() override;
     void ParseCurrentItem(CGameFont* F) override;
 
-
-    shared_str SectionName;
-
-
     //---------------- 3Д гильзы ------------------//
     //bool m_sUse3DShells{}, m_sShellDropOnReload{};
     //float m_sShellDropTime{};
 
-
-    shared_str m_sShellHudVisual, m_sShell3DSect;
-    bool bUse3DShell{};
-
-    u32 m_dwShowAnimatedShellVisual;//--> Время в dwTimeGlobal (м\сек), в течении которого гарантировано отображаем
-                                     //    анимированную гильзу
-
-    shared_str m_sAnimatedShellHUDVisSect; //--> Визуал-секция анимированной худовой гильзы
-    shared_str m_sCurAnimatedShellHudVisual; //--> Путь к текущему визуалу анимированной худовой гильзы от последнего выстрела
-
-    shared_str m_sAnimatedShellLastBulletHUDVisSect; //--> Визуал-секция анимированной худовой гильзы от выстрела последнего патрона (Protecta)
-    bool m_bCanShowLastBulletShell; //--> Можем-ли мы показывать гильзу после выстрела последнего патрона в стволе (Protecta)
-
-    bool m_bDontSpawnShell3DForFirstBullet; //--> Флаг, блокирующий спавн 3D-гильзы если был выстрелен первый патрон из полного магазина
-    bool m_bDontSpawnShell3DForLastBullet; //--> Флаг, блокирующий спавн 3D-гильзы если был выстрелен последний патрон в стволе
-    shared_str m_sCurShell3DSect; //--> Текущая секция объекта 3D-гильзы от последнего выстрела
-
-    xr_deque<u32> m_Shells3DQueue; //--> Очередь отложенного спавна 3D-гильз (хранит dwTimeGlobal когда нужно заспавнить гильзу)
-
-    // Можно-ли в данный момент запускать анимированные 3D-гильзы
-    bool CanPlay3DShellAnim() const
-    {
-        if (!(CShellLauncher::CanPlay3DShellAnim()))
-            return false;
-
-        switch (GetState())
-        {
-        case eIdle:
-        case eFire:
-        case eFire2:
-        case eMisfire:
-        case eMagEmpty: {
-            return true;
-        }
-        }
-
-        return false; //--> Гильза будет выкинута сразу
-    }
+    float fShellLaunchTimeout;
+    bool bShellTimeOuted{};
 
 
-    IC void UpdShellShowTimer() { m_dwShowAnimatedShellVisual = Device.dwTimeGlobal + WEAPON_ANIM_SHELL_SHOW_TIME; }
+    bool bDropShellOnReload;
+    bool bCanDropShellOnReload{};
+    float fShellDropTimeFactor{};
+    int iShellCntPerShoot;
 
-    void UpdateLastBulletInfo()
-    {
-        m_sCurAnimatedShellHudVisual = m_sShellHudVisual;
-        m_sCurShell3DSect = m_sShell3DSect;
+    shared_str m_sCurShell3DSect;
 
-        if (GetAmmoElapsed() <= 1)
-        { //--> Стреляем последний патрон из основного ствола
-            m_bCanShowLastBulletShell = true;
-        }
-    }
-    bool m_sRegister3DShell{};
-
-    virtual void UpdateAnimatedShellVisual();
     virtual void Update3DShellTransform() { UpdateFireDependencies_internal(); };
 
 };

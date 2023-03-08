@@ -409,11 +409,59 @@ void CWeaponMagazinedWGrenade::SwitchState(u32 S)
     }
 }
 
+//-- Так не нужно будет всякие затычки придумывать
 void CWeaponMagazinedWGrenade::OnEvent(NET_Packet& P, u16 type)
 {
-    //inherited::OnEvent(P, type);
     u16 id;
     switch (type)
+    {
+    case GE_WPN_STATE_CHANGE: {
+        u8 state;
+        P.r_u8(state);
+        P.r_u8(m_sub_state);
+        // u8 NewAmmoType =
+        P.r_u8();
+        u8 AmmoElapsed = P.r_u8();
+        u8 NextAmmo = P.r_u8();
+        if (NextAmmo == u8(-1))
+            m_set_next_ammoType_on_reload = u32(-1);
+        else
+            m_set_next_ammoType_on_reload = u8(NextAmmo);
+
+        if (OnClient())
+            SetAmmoElapsed(int(AmmoElapsed));
+        OnStateSwitch(u32(state), GetState());
+    }
+    break;
+ 
+    case GE_OWNERSHIP_TAKE: 
+    {
+        if (!IsGrenadeMode())
+        {
+            P.r_u16(id);
+            CShellLauncher::RegisterShell(id, this);
+        }
+        else
+        {
+            P.r_u16(id);
+            CRocketLauncher::AttachRocket(id, this);
+        }
+    }
+    break;
+    case GE_OWNERSHIP_REJECT:
+    case GE_LAUNCH_ROCKET: {
+        bool bLaunch = (type == GE_LAUNCH_ROCKET);
+        P.r_u16(id);
+        CRocketLauncher::DetachRocket(id, bLaunch);
+    }
+    break;
+    default: {
+        CHudItemObject::OnEvent(P, type);
+    }
+    break;
+    }
+
+    /*switch (type)
     {
     case GE_OWNERSHIP_TAKE: {
         if (!m_sRegister3DShell && IsGrenadeMode())
@@ -431,7 +479,7 @@ void CWeaponMagazinedWGrenade::OnEvent(NET_Packet& P, u16 type)
         break;
     }
     }
-    inherited::OnEvent(P, type);
+    inherited::OnEvent(P, type);*/
 }
 
 void CWeaponMagazinedWGrenade::ReloadMagazine()

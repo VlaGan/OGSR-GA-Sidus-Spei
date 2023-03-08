@@ -76,6 +76,8 @@ void CCartridge::Load(LPCSTR section, u8 LocalAmmoType)
     VERIFY(fWallmarkSize > 0);
 
     m_InvShortName = CStringTable().translate(pSettings->r_string(section, "inv_name_short"));
+
+    m_3dShellSection = READ_IF_EXISTS(pSettings, r_string, section, "shell3d_sect", nullptr);
 }
 
 float CCartridge::Weight() const

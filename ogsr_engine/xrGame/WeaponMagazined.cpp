@@ -304,7 +304,11 @@ void CWeaponMagazined::Reload()
 {
     inherited::Reload();
 
-    TryReload();
+    if (TryReload())
+    {
+        if (bDropShellOnReload && m_sCurShell3DSect != nullptr)
+            bCanDropShellOnReload = true;
+    }
 }
 
 bool CWeaponMagazined::TryReload()
@@ -668,6 +672,49 @@ void CWeaponMagazined::UpdateCL()
     UpdateSounds();
     TimeLockAnimation();
     UpdateBayonetKick();
+
+
+    //-- VlaGan: дроп гильзы при перезарядке
+    if (bCanDropShellOnReload)
+    {
+        if (fShellDropTimeFactor >= fShellLaunchTimeout)
+        {
+            if (m_sCurShell3DSect != nullptr)
+            {
+                if (CShellLauncher::GetLPCount() > 1)
+                {
+                    int curr_point{1};
+                    for (int i = 0; i < iMagazineSize - iAmmoElapsed; i++)
+                    {
+                        LaunchShell3D(m_sCurShell3DSect.c_str(), (u32)curr_point);
+                        curr_point = curr_point == CShellLauncher::GetLPCount() ? 1 : ++curr_point;
+                    }
+                }else
+                    for (int i = 0; i < iMagazineSize - iAmmoElapsed; i++)
+                        LaunchShell3D(m_sCurShell3DSect.c_str());
+            }
+            bCanDropShellOnReload = false;
+            fShellDropTimeFactor = 0.f;
+        }
+        else
+            fShellDropTimeFactor += Device.fTimeDelta / fShellLaunchTimeout;
+    }
+
+
+    //-- отстроченный лаунч 3д гильзы для помповок, болтовок
+    if (bShellTimeOuted)
+        if (fShellDropTimeFactor >= fShellLaunchTimeout)
+        {
+            if (m_sCurShell3DSect != nullptr)
+            {
+                //for (int i = 0; i < iShellCntPerShoot; i++)
+                LaunchShell3D(m_sCurShell3DSect.c_str());
+            }
+            fShellDropTimeFactor = 0.f;
+            bShellTimeOuted = false;
+        }
+        else
+            fShellDropTimeFactor += Device.fTimeDelta / fShellLaunchTimeout;
 }
 
 void CWeaponMagazined::UpdateSounds()
@@ -849,14 +896,22 @@ void CWeaponMagazined::OnShot()
 
 
     // 3D Shells
-    if (!IsGrenadeMode() && m_sShell3DSect != nullptr)
+    //m_magazine.back().m_3dShellSection.size();
+    m_sCurShell3DSect = m_magazine.back().m_3dShellSection;
+    if (!fShellLaunchTimeout)
     {
-        m_sRegister3DShell = true;
-        LaunchShell3D(1,  m_sShell3DSect.c_str());
-
+        if (!IsGrenadeMode() && !bDropShellOnReload && m_sCurShell3DSect != nullptr)
+        {
+            Msg("m_sCurShell3DSect = [%s]", m_sCurShell3DSect.c_str());
+            for (int i = 0; i < iShellCntPerShoot; i++)
+                LaunchShell3D(m_magazine.back().m_3dShellSection.c_str());
+        }
     }
-
-    UpdateAnimatedShellVisual();
+    else
+    {
+        if (!bDropShellOnReload)
+            bShellTimeOuted = true;
+    }
 
     // Огонь из ствола
     StartFlameParticles();
