@@ -36,7 +36,7 @@ public:
     void relcase_register(RELCASE_CALLBACK, int*);
     void relcase_unregister(int*);
 
-    xr_vector<CObject*> GetActiveObjects() { return objects_active; }
+    IC xr_vector<CObject*>& GetActiveObjects() { return objects_active; }
 
 public:
     // methods

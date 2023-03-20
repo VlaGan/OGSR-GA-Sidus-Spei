@@ -58,7 +58,8 @@ public:
         float m_fTimeCollusion{};
         //Fvector dir;
         //float fYAngle;
-        u32 collusion_parent = (u32)-1;
+        u16 collusion_parent = (u16)-1;
+        IC bool IsCollisionParent() { return collusion_parent != (u16)-1; }
         u32 vis_ID; // индекс в visibility списке он же тип [не качается, качается1, качается2]
         float c_hemi;
         float c_sun;

@@ -39,7 +39,9 @@ extern ECORE_API float ps_detail_collision_dist;
 extern ECORE_API float ps_detail_collision_time;
 extern ECORE_API Fvector ps_detail_collision_angle;
 extern ECORE_API float ps_detail_enable_collision;
+extern ECORE_API float ps_detail_collision_radius;
 extern ECORE_API xr_vector<DetailCollusionPoint> level_detailcoll_points;
+extern ECORE_API Fvector actor_position;
 
 extern ECORE_API float ps_r2_mask_control;
 

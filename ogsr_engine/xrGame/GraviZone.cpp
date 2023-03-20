@@ -206,15 +206,20 @@ void CBaseGraviZone ::AffectPullDead(CPhysicsShellHolder* GO, const Fvector& thr
 #include <_detail_collusion_point.h>
 extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
 extern float ps_detail_enable_collision;
+extern Fvector actor_position;
+extern float ps_detail_collision_radius;
 void CBaseGraviZone ::AffectThrow(SZoneObjectInfo* O, CPhysicsShellHolder* GO, const Fvector& throw_in_dir, float dist)
 {
     if (ps_detail_enable_collision)
     {
         //Msg("CBaseGraviZone::AffectThrow() has been activated()! Anomaly id = [%d]! Telekin hight = [%f]!", this->ID(), m_fTeleHeight);
         //Msg("Obj y = [%f], Anomaly y = [%f]", O->object?O->object->Position().y:-1.f, Position().y);
-        if (m_fTeleHeight <= 3.f)
-            // Fvector(Position().x, Position().y - m_fTeleHeight, Position().z)
-            level_detailcoll_points.push_back(DetailCollusionPoint(this->Position(), this->ID(), 4.0f, 0.4f, 1.f, true));
+        
+        if (actor_position.distance_to(Position()) <= ps_detail_collision_radius)
+        {
+            if (m_fTeleHeight <= 3.f)
+                level_detailcoll_points.push_back(DetailCollusionPoint(this->Position(), this->ID(), 4.0f, 0.4f, 1.f, true));
+        }
     }
 
     Fvector position_in_bone_space;

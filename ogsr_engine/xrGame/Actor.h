@@ -798,7 +798,6 @@ public:
     bool m_fIsSetedActorCrouch{};
 
     void UpdateBodyHealth();
-    void UpdateDetailCollisionPoints();
 
 private:
     float m_fHeadHealth{1.f};

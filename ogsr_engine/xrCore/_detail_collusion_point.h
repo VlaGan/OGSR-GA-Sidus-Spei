@@ -4,6 +4,8 @@
 #include <cmath>
 
 struct DetailCollusionPoint;
+typedef xr_vector<DetailCollusionPoint>::iterator VecDetailCollIter;
+typedef xr_vector<DetailCollusionPoint> VecDetailColl;
 
 extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
 extern float ps_detail_collision_dist;
@@ -14,7 +16,7 @@ struct DetailCollusionPoint
 {
 public:
     Fvector pos;
-    u32 id;
+    u16 id;
     float radius = ps_detail_collision_dist;
     float rot_time_in = ps_detail_collision_time;
     float rot_time_out = ps_detail_collision_time * 1.5f; //-- сделать отдельно _in && _out
@@ -30,7 +32,7 @@ public:
     float fExpPointLoweringTime{};
 
     DetailCollusionPoint() = default;
-    DetailCollusionPoint(Fvector pos, u32 id, float radius = ps_detail_collision_dist, float rot_time_in = ps_detail_collision_time,
+    DetailCollusionPoint(Fvector pos, u16 id, float radius = ps_detail_collision_dist, float rot_time_in = ps_detail_collision_time,
                          float rot_time_out = ps_detail_collision_time * 1.5f, bool is_explosion = false, float fExpPointLoweringTime = 1.5f)
     { 
         this->pos = pos;
@@ -43,18 +45,28 @@ public:
     }
 };
 
-static DetailCollusionPoint* GetDetailCollusionPointById(u32 id)
+static DetailCollusionPoint* GetDetailCollusionPointById(const u16& ID)
 {
     for (auto& point : level_detailcoll_points)
-        if (point.id == id)
+        if (point.id == ID)
             return &point;
     return nullptr;
 }
 
-static bool DetailCollisonPointExist(u32 id)
+static void EraseDetailCollPointIfExists(const u16& ID) {
+    VecDetailCollIter it = level_detailcoll_points.begin();
+    for (; it != level_detailcoll_points.end(); ++it)
+        if ((*it).id == ID)
+        {
+            level_detailcoll_points.erase(it);
+            break;
+        }
+}
+
+static bool DetailCollisonPointExist(const u16& ID)
 { 
     for (auto& i : level_detailcoll_points)
-        if (i.id == id)
+        if (i.id == ID)
             return true;
     return false;
 }

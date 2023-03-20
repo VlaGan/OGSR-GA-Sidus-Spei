@@ -969,6 +969,8 @@ void CActor::UpdateCL()
 constexpr u32 TASKS_UPDATE_TIME = 1u;
 
 float NET_Jump = 0;
+extern Fvector actor_position;
+
 void CActor::shedule_Update(u32 DT)
 {
     setSVU(OnServer());
@@ -1254,8 +1256,8 @@ void CActor::shedule_Update(u32 DT)
 
 
     UpdateBodyHealth();
-    UpdateDetailCollisionPoints();
 
+    actor_position.set(Position());
     updated = true;
 };
 #include "debug_renderer.h"
@@ -2047,36 +2049,3 @@ void CActor::UpdateBodyHealth()
         IR_OnKeyboardHold(kCROUCH);*/
 }
 
-//-- Grass Collusion
-#include <_detail_collusion_point.h>
-extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
-extern float ps_detail_enable_collision;
-
-void CActor::UpdateDetailCollisionPoints() {
-
-    if (ps_detail_enable_collision)
-    {
-        //-- VlaGan: удаляем только позиции с is_explosion = false
-        xr_vector<DetailCollusionPoint> explosion_points;
-        for (const auto& point : level_detailcoll_points)
-            if (point.is_explosion)
-                explosion_points.push_back(point);
-
-        level_detailcoll_points.clear();
-        if (explosion_points.size())
-            level_detailcoll_points = explosion_points;
-
-        //-- Обновляем точки колизии
-        xr_vector<CObject*> active_objects = Level().Objects.GetActiveObjects();
-        for (auto obj : active_objects)
-        {
-            if (auto gobj = smart_cast<CGameObject*>(obj))
-                if (gobj->cast_base_monster() || gobj->cast_stalker() || gobj->cast_actor())
-                {
-                    level_detailcoll_points.push_back(DetailCollusionPoint(obj->Position(), obj->ID()));
-                    // Msg("!Detected object for grass collision: name[%s], ID[%d]!", obj->cName().c_str(), obj->ID());
-                }
-        }
-        // Msg("!level_detailcoll_points.size() = [%d]", level_detailcoll_points.size());
-    }
-}

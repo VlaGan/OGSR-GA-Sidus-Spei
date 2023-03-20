@@ -316,6 +316,8 @@ float CExplosive::TestPassEffect(const	Fvector	&source_p,	const	Fvector	&dir,flo
 #include <_detail_collusion_point.h>
 extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
 extern float ps_detail_enable_collision;
+extern Fvector actor_position;
+extern float ps_detail_collision_radius;
 
 void CExplosive::Explode()
 {
@@ -331,8 +333,9 @@ void CExplosive::Explode()
 
 	//-- VlaGan: мне лень прописывать для каждого отдельно, поэтому затычка для актора (u32)-2, ибо у него ид - 0 и для нпс, мобов -ид
 	if (ps_detail_enable_collision)
+        if (actor_position.distance_to(pos) <= ps_detail_collision_radius)
         level_detailcoll_points.push_back(
-            DetailCollusionPoint(m_vExplodePos, m_iCurrentParentID != g_actor->ID() ? -m_iCurrentParentID : (u32)-2, m_fBlastRadius, 0.3f, 1.5f, true));
+            DetailCollusionPoint(pos, m_iCurrentParentID != g_actor->ID() ? -m_iCurrentParentID : (u16)-2, m_fBlastRadius, 0.3f, 1.5f, true));
 
 #ifdef DEBUG
 	if(ph_dbg_draw_mask.test(phDbgDrawExplosions))

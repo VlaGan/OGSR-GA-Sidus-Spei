@@ -55,6 +55,12 @@
 #include "ui/UIPDAWnd.h"
 #include "ui/UIBtnHint.h"
 
+#include <_detail_collusion_point.h>
+extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
+extern float ps_detail_enable_collision;
+extern Fvector actor_position;
+extern float ps_detail_collision_radius;
+
 CPHWorld* ph_world = 0;
 
 //////////////////////////////////////////////////////////////////////
@@ -429,6 +435,26 @@ void CLevel::OnFrame()
         pStatGraphR->AppendItem(float(m_dwRPC) * fRPC_Mult, 0xffff0000, 1);
         pStatGraphR->AppendItem(float(m_dwRPS) * fRPS_Mult, 0xff00ff00, 0);
     };
+
+
+    //-- Обновляем точки колизии
+    if (ps_detail_enable_collision)
+    {
+        //-- VlaGan: удаляем только позиции с is_explosion = false
+        xr_vector<DetailCollusionPoint> explosion_points;
+        for (const auto& point : level_detailcoll_points)
+            if (point.is_explosion)
+                explosion_points.push_back(point);
+
+        level_detailcoll_points.clear();
+        if (explosion_points.size())
+            level_detailcoll_points = explosion_points;
+
+        const xr_vector<CObject*>& active_objects = Objects.GetActiveObjects();
+        for (auto& obj : active_objects) //-- CEntityAlive будет лучше
+            if (auto gobj = smart_cast<CEntityAlive*>(obj); gobj && actor_position.distance_to(gobj->Position()) <= ps_detail_collision_radius)
+                level_detailcoll_points.push_back(DetailCollusionPoint(gobj->Position(), gobj->ID()));
+    }
 }
 
 #ifdef DEBUG_PRECISE_PATH

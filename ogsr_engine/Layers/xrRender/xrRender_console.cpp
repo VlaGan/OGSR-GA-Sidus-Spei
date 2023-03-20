@@ -232,10 +232,11 @@ float ps_current_detail_density = 0.6;
 float ps_current_detail_scale = 1.f;
 float ps_detail_collision_dist = 1.f;
 float ps_detail_collision_time = 0.25f;
-Fvector ps_detail_collision_angle = {45, 0, 0};
+Fvector ps_detail_collision_angle = {0, 50, 0};
 float ps_detail_enable_collision = 1.f;
-
-xr_vector<DetailCollusionPoint> level_detailcoll_points; //= xr_vector<Fvector>(0);
+float ps_detail_collision_radius = 40.f;
+xr_vector<DetailCollusionPoint> level_detailcoll_points;
+Fvector actor_position{};
 
 float ps_r2_gloss_factor = 4.0f;
 float ps_r2_gloss_min = 0.f;
@@ -747,6 +748,7 @@ void xrRender_initconsole()
     CMD4(CCC_Float, "r__detail_collision_time", &ps_detail_collision_time, 0.1f, 3.f);
     CMD4(CCC_Vector3, "r__detail_collision_angles", &ps_detail_collision_angle, Fvector({-90.f, -90.f, -90.f}), Fvector({90.f, 90.f, 90.f}));
     CMD4(CCC_Float, "r__detail_collision_enabled", &ps_detail_enable_collision, 0.f, 1.f);
+    CMD4(CCC_Float, "r__detail_collision_visible_radius", &ps_detail_collision_radius, 5.f, 70.f);
 
 #ifdef DEBUG
     CMD4(CCC_Float, "r__detail_l_ambient", &ps_r__Detail_l_ambient, .5f, .95f);

@@ -222,17 +222,21 @@ void CPseudoGigant::on_activate_control(ControlCom::EControlType type)
 #include <_detail_collusion_point.h>
 extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
 extern float ps_detail_enable_collision;
+extern Fvector actor_position;
+extern float ps_detail_collision_radius;
 
 void CPseudoGigant::on_threaten_execute()
 {
+    Fvector& position = Position();
     if (ps_detail_enable_collision)
         //-- VlaGan: для псевдыча ID зеркальный, чтобы он не влиял на траву под ид точки удара
         //-- для гранат и взрывного легче, ведь они по задумке не коллизируют и можно спокойно брать их ид
-        level_detailcoll_points.push_back(DetailCollusionPoint(Position(), -ID(), 15.f, 0.3f, 1.5f, true));
+        if (actor_position.distance_to(position) <= ps_detail_collision_radius)
+            level_detailcoll_points.push_back(DetailCollusionPoint(position, -ID(), 15.f, 0.3f, 1.5f, true));
 
     // разбросить объекты
     m_nearest.clear();
-    Level().ObjectSpace.GetNearest(m_nearest, Position(), 15.f, NULL);
+    Level().ObjectSpace.GetNearest(m_nearest, position, 15.f, NULL);
     for (u32 i = 0; i < m_nearest.size(); i++)
     {
         CPhysicsShellHolder* obj = smart_cast<CPhysicsShellHolder*>(m_nearest[i]);
@@ -245,14 +249,14 @@ void CPseudoGigant::on_threaten_execute()
         Fvector pos;
         pos.set(obj->Position());
         pos.y += 2.f;
-        dir.sub(pos, Position());
+        dir.sub(pos, position);
         dir.normalize();
         obj->m_pPhysicsShell->applyImpulse(dir, 20 * obj->m_pPhysicsShell->getMass());
     }
 
     // играть звук
     Fvector pos;
-    pos.set(Position());
+    pos.set(position);
     pos.y += 0.1f;
     m_sound_threaten_hit.play_at_pos(this, pos);
 
@@ -266,7 +270,7 @@ void CPseudoGigant::on_threaten_execute()
     if (pA->is_jump() && !m_kick_hit_jumping_actor)
         return;
 
-    float dist_to_enemy = pA->Position().distance_to(Position());
+    float dist_to_enemy = pA->Position().distance_to(position);
     float hit_value;
     hit_value = m_kick_damage - m_kick_damage * dist_to_enemy / m_threaten_dist_max;
     clamp(hit_value, 0.f, 1.f);

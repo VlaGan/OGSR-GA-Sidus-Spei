@@ -38,10 +38,17 @@ bool CMosquitoBald::BlowoutState()
 #include <_detail_collusion_point.h>
 extern xr_vector<DetailCollusionPoint> level_detailcoll_points;
 extern float ps_detail_enable_collision;
+extern Fvector actor_position;
+extern float ps_detail_collision_radius;
 void CMosquitoBald::Affect(SZoneObjectInfo* O)
 {
     if (ps_detail_enable_collision)
-        level_detailcoll_points.push_back(DetailCollusionPoint(Position(), ID(), 2.5f, 0.3f, 1.f, true));
+        if (actor_position.distance_to(Position()) <= ps_detail_collision_radius)
+        {
+            //-- это специфично для трамплина, т.к. он может бить очень часто и коллизия ломается
+            EraseDetailCollPointIfExists(ID());
+            level_detailcoll_points.push_back(DetailCollusionPoint(Position(), ID(), 2.5f, 0.3f, 1.f, true));
+        }
 
     CPhysicsShellHolder* pGameObject = smart_cast<CPhysicsShellHolder*>(O->object);
     if (!pGameObject)
