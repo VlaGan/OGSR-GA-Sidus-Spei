@@ -132,7 +132,9 @@ void CDetailManager::hw_Render_dump(const Fvector4& consts, const Fvector4& wave
     //-- лучше вынести это сюда
     Fvector ymp = ps_detail_collision_angle;
     Fmatrix mGrassCollusionRot, M;
+#ifndef SIMPLE_DETAIL_COLLISION
     DetailCollusionPoint* pPointParent = nullptr;
+#endif
 
     // Iterate
     for (u32 O = 0; O < objects.size(); O++)
@@ -323,8 +325,9 @@ void CDetailManager::hw_Render_dump(const Fvector4& consts, const Fvector4& wave
                             ymp = ps_detail_collision_angle;
                             M.mulB_43(mGrassCollusionRot);
                             //}
-
+#ifndef SIMPLE_DETAIL_COLLISION
                             pPointParent = nullptr;
+#endif
                         }
                         else
                         {
